@@ -1,0 +1,79 @@
+.arrival-list {
+  @include panel-wide-left;
+
+  .back-button {
+    @include button;
+    position: relative;
+    left: 0.5em;
+  }
+
+  .arrival-list-description {
+    @include panel-title;
+    clear: left;
+    cursor: pointer;
+
+    .arrival-list-directions {
+      @include panel-subtitle;
+    }
+  }
+}
+
+@media screen and (max-width:639px) {
+  .arrival-list {
+    @include panel-narrow-bottom;
+  }
+}
+
+.arrival-list-items {
+  margin-top: 1em;
+
+  .arrival-list-item {
+    align-items: center;
+    background: $foreground-light;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5em;
+    overflow: hidden;
+
+    &.active {
+      background: $background-dark;
+      color: $foreground-light;
+    }
+
+    &:hover {
+      background: $foreground-dark;
+    }
+
+    .arrival-id {
+      color: $foreground-light;
+      display: inline-block;
+      font-size: 1.5em;
+      font-weight: bold;
+      padding: 0.5em 0.4em 0.4em;
+      text-align: center;
+      width: 4em;
+    }
+
+    .arrival-name {
+      display: inline-block;
+      font-size: 1em;
+      padding-left: 0.5em;
+      width: 82%;
+    }
+
+    .arrival-metrics {
+      font-size: 0.9em;
+      padding-top: 0em;
+      text-align: right;
+      width: 100%;
+
+      .arrival-metric {
+        display: inline-block;
+        padding: 0em 1em 0 0;
+        text-align: center;
+        width: auto;
+      }
+    }
+  }
+}

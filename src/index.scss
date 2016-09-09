@@ -1,0 +1,105 @@
+@import '~normalize.css/normalize.css';
+@import url(https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic);
+@import 'glyphicons.scss';
+
+$background-dark: #2c3e50;
+$background-light: #34495e;
+$foreground-dark: #7f8c8d;
+$foreground-light: #ecf0f1;
+$turquoise-light: #1abc9c;
+$yellow-light: #F1C40F;
+
+// This button style is used for the back button on the arrivals list.
+@mixin button {
+  background: #fff;
+  border-radius: 3px;
+  border: 1px solid #aaa;
+  cursor: pointer;
+  float: left;
+  font-size: 0.7em;
+  margin: 0.5em 0 0.5em 0;
+  padding: 0.5em;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  &:hover {
+    background: $turquoise-light;
+    color: $foreground-light;
+  }
+}
+
+// For a wider viewport, panel-wide-left and panel-wide-right split the
+// viewport into two panels side by side. The left panel is used for
+// interactive content, and the right one is used to display the map.
+
+@mixin panel-wide-left {
+  bottom: 0;
+  left: 0;
+  overflow-y: scroll;
+  position: absolute;
+  top: 40px;
+  width: 50%;
+}
+
+@mixin panel-wide-right {
+  bottom: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50%;
+  z-index: 2;
+}
+
+// For a narrow viewport, panel-narrow-bottom and panel-narrow-top split the
+// viewport into two panels stacked on top of each other. The bottom one is a
+// little larger and is used for interactive content, and the top one is
+// used to display the map.
+
+@mixin panel-narrow-bottom {
+  bottom: 0;
+  left: 0;
+  overflow-y: scroll;
+  position: relative;
+  top: 2em;
+  width: 100%;
+}
+
+@mixin panel-narrow-top {
+  height: 200px;
+  left: 0;
+  position: relative;
+  top: 0;
+  width: 100%;
+}
+
+// Larger title text that appears in the panels.
+@mixin panel-title {
+  color: $foreground-light;
+  font-size: 1.3em;
+  margin: 0em 0 0.4em 0.6em;
+}
+
+// Small piece of text that appears next to the component title.
+@mixin panel-subtitle {
+  cursor: pointer;
+  font-size: 0.5em;
+  font-style: italic;
+  font-weight: normal;
+  margin-left: 10px;
+  white-space: no-wrap;
+}
+
+body {
+  color: #111;
+  background: #34495e;
+  font-size: 17px;
+  line-height: 1.2;
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+@import './src/components/app.scss';
+@import './src/components/arrival_list.scss';
+@import './src/components/map.scss';
+@import './src/components/stop_list.scss';

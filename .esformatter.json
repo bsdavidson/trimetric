@@ -1,0 +1,18 @@
+{
+  "jsx": {
+    "spaceInJSXExpressionContainers": ""
+  },
+  "lineBreak": {
+    "before": {
+      "ArrowFunctionExpressionClosingBrace": ">=0"
+    },
+    "after": {
+      "ArrowFunctionExpressionClosingBrace": ">=0",
+      "ArrowFunctionExpressionOpeningBrace": ">=0",
+      "ObjectExpressionOpeningBrace": "<=1"
+    }
+  },
+  "plugins": [
+    "esformatter-jsx"
+  ]
+}

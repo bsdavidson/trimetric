@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+/archive
+/bundle.css*
+/bundle.js*
+/coverage*
+/dist
+/node_modules
+/npm-debug.log
+/.env
