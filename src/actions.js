@@ -1,12 +1,12 @@
-export const UPDATE_DATA = "UPDATE_DATA"
-export const UPDATE_LOCATION = "UPDATE_LOCATION"
-export const UPDATE_HOME_LOCATION = "UPDATE_HOME_LOCATION"
+export const UPDATE_DATA = "UPDATE_DATA";
+export const UPDATE_LOCATION = "UPDATE_LOCATION";
+export const UPDATE_HOME_LOCATION = "UPDATE_HOME_LOCATION";
 
 export const LocationTypes = {
   VEHICLE: "VEHICLE",
   STOP: "STOP",
   HOME: "HOME"
-}
+};
 
 export function updateData(stops, vehicles, queryTime) {
   return {
@@ -14,7 +14,7 @@ export function updateData(stops, vehicles, queryTime) {
     stops,
     vehicles,
     queryTime
-  }
+  };
 }
 
 export function updateHomeLocation(lat, lng, gps = true) {
@@ -25,7 +25,7 @@ export function updateHomeLocation(lat, lng, gps = true) {
       lng: lng,
       gps: gps
     }
-  }
+  };
 }
 
 export function updateLocation(locationType, id, lat, lng, following) {
@@ -38,7 +38,7 @@ export function updateLocation(locationType, id, lat, lng, following) {
       lng,
       following
     }
-  }
+  };
 }
 
 export function clearLocation() {
@@ -46,5 +46,5 @@ export function clearLocation() {
     type: UPDATE_LOCATION,
     locationClick: null,
     following: false
-  }
+  };
 }

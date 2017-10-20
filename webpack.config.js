@@ -4,46 +4,53 @@ const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 module.exports = {
   devtool: "source-map",
-  entry: {
-    "js": "./src/index.jsx",
-    "css": "./src/index.scss"
-  },
+  entry: ["./src/index.jsx", "./src/index.scss"],
   externals: {
     // "react/addons": true,
     "react/lib/ExecutionEnvironment": true,
     "react/lib/ReactContext": true,
-    "assets": true
+    assets: true
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.jsx?$/,
-        loader: "babel-loader",
         exclude: /node_modules/,
-        query: {
-          presets: ["es2015", "react"]
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["es2015", "react"]
+          }
         }
       },
-       {
+      {
         test: /\.s?css$/,
-        loader: ExtractTextPlugin.extract(["style"], ["css", "sass"])
+        use: ExtractTextPlugin.extract({
+          fallback: "style-loader",
+          use: ["css-loader", "sass-loader"]
+        })
       },
-      ,
       {
         test: /\.(woff|woff2|eot|ttf|svg)$/,
-        loader: "file?name=[path][name].[ext]"
+        use: {
+          loader: "file-loader",
+          options: {
+            name: "[path][name].[ext]"
+          }
+        }
       }
     ]
   },
+  // },
   plugins: [
-    new ExtractTextPlugin("bundle.css"),
+    new ExtractTextPlugin({filename: "bundle.css", allChunks: true}),
     new DotenvPlugin()
   ],
   output: {
     path: __dirname,
-    filename: "./bundle.js"
+    filename: "bundle.js"
   },
   resolve: {
-    extensions: ["", ".js", ".jsx"]
+    extensions: [".js", ".jsx"]
   }
 };

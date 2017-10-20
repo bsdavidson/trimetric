@@ -1,30 +1,20 @@
-import React from "react"
-import { assert } from "chai"
-import { mount } from "enzyme"
-import { createStore } from "redux"
-import { Router, hashHistory } from "react-router"
-import { reducer } from "../src/store"
-import { App } from "../src/components/app"
+import {assert} from "chai";
+import {mount} from "enzyme";
+import {createStore} from "redux";
+// import {Router} from "react-router-dom";
+import {MemoryRouter} from "react-router-dom";
+import {reducer} from "../src/store";
+import {render} from "../src/router";
+import {configure} from "enzyme";
+import Adapter from "enzyme-adapter-react-16";
 
+configure({adapter: new Adapter()});
 
 describe("App", () => {
   it("Render a container", function() {
-    let store = createStore(reducer, {stops: [], vehicles: {arrivals: []}})
+    let store = createStore(reducer, {stops: [], vehicles: {arrivals: []}});
+    let wrapper = mount(render(store, {Router: MemoryRouter}));
 
-    const ROUTES = [
-      {
-        path: "/",
-        component: App,
-        store: store
-      },
-      {
-        path: "/stop/:stopID",
-        component: App,
-        store: store
-      }
-    ];
-
-    let wrapper = mount(<Router history={hashHistory} routes={ROUTES} />)
-    assert.equal(wrapper.find(".app").length, 1)
-  })
-})
+    assert.equal(wrapper.find(".app").length, 1);
+  });
+});

@@ -9,14 +9,14 @@ if (!process.env.NODE_ENV) {
 module.exports = function(config) {
   config.set({
     // base path that will be used to resolve all patterns (eg. files, exclude)
-    basePath: "",
+    // basePath: "",
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ["mocha"],
     // list of files / patterns to load in the browser
     files: ["test.webpack.js"],
     // list of files to exclude
-    exclude: [],
+    // exclude: [],
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
@@ -54,24 +54,28 @@ module.exports = function(config) {
         "react/lib/ReactContext": true
       },
       module: {
-        loaders: [{
-          test: /\.json$/,
-          loader: "json"
-        }, {
-          test: /\.jsx?$/,
-          loader: "babel-loader",
-          exclude: /node_modules/,
-          query: {
-            presets: ["es2015", "react"]
+        // rename to rules
+        loaders: [
+          // {
+          //   test: /\.json$/,
+          //   loader: "json-loader",
+          // },
+          {
+            test: /\.jsx?$/,
+            exclude: /node_modules/,
+            use: {
+              loader: "babel-loader",
+              options: {
+                presets: ["es2015", "react"]
+              }
+            }
           }
-        }]
+        ]
       },
       resolve: {
-        extensions: ["", ".js", ".jsx", ".json"]
+        extensions: [".js", ".jsx", ".json"]
       },
-      plugins: [
-        new DotenvPlugin()
-      ],
+      plugins: [new DotenvPlugin()],
       watch: true
     },
     webpackServer: {

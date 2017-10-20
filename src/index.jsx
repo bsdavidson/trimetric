@@ -1,36 +1,19 @@
 import "whatwg-fetch";
-import fetchPonyfill from "fetch-ponyfill"
-import React from "react"
-import ReactDOM from "react-dom"
-import { Router, hashHistory } from "react-router"
+import fetchPonyfill from "fetch-ponyfill";
+import ReactDOM from "react-dom";
+import {BrowserRouter} from "react-router-dom";
 
-import { App } from "./components/app"
-import { Trimet } from "./data"
-import { store } from "./store"
+import {render} from "./router";
+import {Trimet} from "./data";
+import {store} from "./store";
 
+const trimet = new Trimet(store, fetchPonyfill().fetch);
+trimet.start();
 
-const appElement = document.getElementById("app")
-
-const trimet = new Trimet(store, fetchPonyfill())
-trimet.start()
-
-const ROUTES = [
-  {
-    path: "/",
-    component: App,
-    store: store
-  },
-  {
-    path: "/stop/:stopID",
-    component: App,
-    store: store
-  }
-];
-
-function render() {
+window.addEventListener("load", () => {
   ReactDOM.render(
-    <Router history={hashHistory} routes={ROUTES} />,
-    appElement)
-}
-
-store.subscribe(render)
+    render(store, {Router: BrowserRouter}),
+    document.getElementById("app")
+  );
+});
+// store.subscribe(render);
