@@ -5,14 +5,16 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "dist": "npm run build && rm -rf dist && mkdir dist && cp -Rv index.html robots.txt assets bundle.css bundle.js dist/",
+    "dist":
+      "npm run build && rm -rf dist && mkdir dist && cp -Rv index.html robots.txt assets bundle.css bundle.js dist/",
     "githooks-install": "precommit install",
     "githooks-remove": "precommit remove",
     "lint": "eslint src test --ext jsx",
     "precommit": "npm run lint",
-    "start": "webpack-dev-server --debug --host 0.0.0.0 & karma start",
+    "watch": "webpack-dev-server --debug --host 0.0.0.0 & karma start",
     "test": "karma start --single-run",
-    "test-watch": "karma start"
+    "test-watch": "karma start",
+    "start": "cd dist && http-server"
   },
   "author": "Brian Davidson",
   "license": "MIT",
@@ -81,14 +83,9 @@
   "directories": {
     "test": "test"
   },
-  "keywords": [
-    "reactjs",
-    "webpack",
-    "karma",
-    "mocha",
-    "chai"
-  ],
+  "keywords": ["reactjs", "webpack", "karma", "mocha", "chai"],
   "dependencies": {
+    "http-server": "^0.10.0",
     "react-router-dom": "^4.2.2"
   }
 }
