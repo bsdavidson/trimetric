@@ -1,0 +1,15 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      args:
+        - GOOGLE_MAPS_API_KEY
+        - TRIMET_API_KEY
+    command: ["yarn", "run", "watch"]
+    ports:
+    - "8080:8080"
+    - "9876:9876"
+    volumes:
+    - ./src:/opt/trimet/src
+    - ./test:/opt/trimet/test

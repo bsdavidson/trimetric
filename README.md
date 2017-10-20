@@ -31,7 +31,7 @@
 ```sh
 git clone https://github.com/bsdavidson/trimetric.git
 
-npm install
+yarn install
 
 ```
 Edit .env and enter your Google Maps API Key and Trimet Developer Key
@@ -41,10 +41,10 @@ Edit .env and enter your Google Maps API Key and Trimet Developer Key
 
 Start webpack dev server and Karma
 ```sh
-$ npm run start
+$ yarn run watch
 ```
 
 Build a copy for web distribution
 ```sh
-$ npm run dist
+$ yarn run dist
 ```
