@@ -11,12 +11,25 @@ services:
       - "-exclude-dir=web"
       - "-build=go install github.com/bsdavidson/trimetric/cmd/trimetric"
       - "-command=/go/bin/trimetric"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      TRIMET_API_KEY:
     image: trimetric-api
     ports:
       - "8181:80"
     volumes:
       - .:/go/src/github.com/bsdavidson/trimetric
     working_dir: /go/src/github.com/bsdavidson/trimetric
+  redis:
+    image: redis:alpine
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: example
+    volumes:
+      - pgdata:/var/lib/postgresql/data
   web:
     build:
       context: .
@@ -25,11 +38,13 @@ services:
         - GOOGLE_MAPS_API_KEY
         - TRIMET_API_KEY
     command: ["yarn", "run", "watch"]
-    image: trimetric-web
-    links:
+    depends_on:
       - api
+    image: trimetric-web
     ports:
       - "8080:8080"
       - "9876:9876"
     volumes:
       - ./web:/opt/trimetric/web
+volumes:
+  pgdata: {}
