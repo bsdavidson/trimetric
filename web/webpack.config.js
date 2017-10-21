@@ -4,6 +4,13 @@ const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 module.exports = {
   devtool: "source-map",
+  devServer: {
+    proxy: {
+      "/api": {
+        target: "http://api:80"
+      }
+    }
+  },
   entry: ["./src/index.jsx", "./src/index.scss"],
   externals: {
     // "react/addons": true,

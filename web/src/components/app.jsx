@@ -64,7 +64,7 @@ class App extends Component {
       <div className="app">
         <nav>
           <div className="app-query-time">
-            Updated: {moment(queryTime).format("h:mm:ss a")}
+            Updated asdsdfadfsd: {moment(queryTime).format("h:mm:ss a")}
           </div>
         </nav>
         <Map

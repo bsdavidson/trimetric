@@ -1,18 +1,15 @@
-FROM node:8
+FROM trimetric-web AS web-build
 
-ARG GOOGLE_MAPS_API_KEY
-ARG TRIMET_API_KEY
+FROM trimetric-api AS api-build
 
-COPY package.json /opt/trimet/package.json
-COPY yarn.lock /opt/trimet/yarn.lock
-WORKDIR /opt/trimet/
-RUN yarn install
-COPY . /opt/trimet/
+FROM busybox:glibc
 
-ENV GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
-ENV TRIMET_API_KEY=$TRIMET_API_KEY
-RUN yarn dist
+COPY --from=web-build /opt/trimetric/web/dist /opt/trimetric/web/dist
+COPY --from=api-build /go/bin/trimetric /opt/trimetric/
+WORKDIR /opt/trimetric
 
-EXPOSE 8080 9876
-VOLUME ["/opt/trimet"]
-CMD ["yarn", "start"]
+EXPOSE 80
+
+VOLUME ["/opt/trimetric" ]
+
+CMD ["./trimetric"]

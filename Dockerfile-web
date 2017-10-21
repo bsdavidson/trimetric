@@ -1,0 +1,18 @@
+FROM node:8
+
+ARG GOOGLE_MAPS_API_KEY
+ARG TRIMET_API_KEY
+
+COPY package.json /opt/trimetric/package.json
+COPY yarn.lock /opt/trimetric/yarn.lock
+WORKDIR /opt/trimetric/
+RUN yarn install
+COPY . /opt/trimetric/
+
+ENV GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
+ENV TRIMET_API_KEY=$TRIMET_API_KEY
+RUN yarn dist
+
+EXPOSE 8080 9876
+VOLUME ["/opt/trimetric"]
+CMD ["yarn", "start"]

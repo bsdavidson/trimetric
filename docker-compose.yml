@@ -1,15 +1,35 @@
 version: '3'
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    command:
+      - "CompileDaemon"
+      - "-exclude-dir=.git"
+      - "-exclude-dir=node_modules"
+      - "-exclude-dir=web"
+      - "-build=go install github.com/bsdavidson/trimetric/cmd/trimetric"
+      - "-command=/go/bin/trimetric"
+    image: trimetric-api
+    ports:
+      - "8181:80"
+    volumes:
+      - .:/go/src/github.com/bsdavidson/trimetric
+    working_dir: /go/src/github.com/bsdavidson/trimetric
   web:
     build:
       context: .
+      dockerfile: Dockerfile-web
       args:
         - GOOGLE_MAPS_API_KEY
         - TRIMET_API_KEY
     command: ["yarn", "run", "watch"]
+    image: trimetric-web
+    links:
+      - api
     ports:
-    - "8080:8080"
-    - "9876:9876"
+      - "8080:8080"
+      - "9876:9876"
     volumes:
-    - ./src:/opt/trimet/src
-    - ./test:/opt/trimet/test
+      - ./web:/opt/trimetric/web
