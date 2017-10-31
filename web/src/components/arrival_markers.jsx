@@ -6,16 +6,16 @@ import PropTypes from "prop-types";
 
 import {updateLocation, LocationTypes} from "../actions";
 import Marker from "./marker";
-import {store} from "../store";
 
 const VEHICLE_ICON_MAP = {
   bus: "bus",
   rail: "tram"
 };
 
-export class ArrivalMarkers extends React.Component {
+class ArrivalMarkers extends React.Component {
   constructor(props) {
     super(props);
+    this.markers = [];
   }
 
   getStopOpts(stop) {
@@ -51,12 +51,12 @@ export class ArrivalMarkers extends React.Component {
     };
   }
 
-  render() {
+  componentWillMount() {
     let {stop, google, map} = this.props;
     if (!stop || !stop.arrivals || !google || !map) {
       return null;
     }
-    let markers = stop.arrivals.map(a => {
+    this.markers = stop.arrivals.map(a => {
       let location = {
         locationType: LocationTypes.VEHICLE,
         id: a.vehicleID,
@@ -66,15 +66,7 @@ export class ArrivalMarkers extends React.Component {
       };
       if (this.isFollowing(a)) {
         if (!deepEqual(this.props.locationClicked, location)) {
-          store.dispatch(
-            updateLocation(
-              location.locationType,
-              location.id,
-              location.lat,
-              location.lng,
-              location.following
-            )
-          );
+          this.props.updateLocation(location);
         }
       }
       return (
@@ -86,17 +78,18 @@ export class ArrivalMarkers extends React.Component {
         />
       );
     });
-
-    markers.push(
+    this.markers.push(
       <Marker
         key={"stop-" + stop.id}
-        google={google}
-        map={map}
-        opts={this.getStopOpts(stop)}
+        google={this.props.google}
+        map={this.props.map}
+        opts={this.getStopOpts(this.props.stop)}
       />
     );
+  }
 
-    return <div>{markers}</div>;
+  render() {
+    return <div>{this.markers}</div>;
   }
 }
 
@@ -126,10 +119,28 @@ ArrivalMarkers.propTypes = {
   }).isRequired
 };
 
+function mapDispatchToProps(dispatch) {
+  return {
+    updateLocation: location => {
+      dispatch(
+        updateLocation(
+          location.locationType,
+          location.id,
+          location.lat,
+          location.lng,
+          location.following
+        )
+      );
+    }
+  };
+}
+
 function mapStateToProps(state) {
   return {
     locationClicked: state.locationClicked
   };
 }
 
-export default withRouter(connect(mapStateToProps)(ArrivalMarkers));
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ArrivalMarkers)
+);

@@ -1,10 +1,9 @@
 import React from "react";
+import {connect} from "react-redux";
 import PropTypes from "prop-types";
-
 import {clearLocation, LocationTypes} from "../actions";
-import {store} from "../store";
 
-export class PanTo extends React.Component {
+class PanTo extends React.Component {
   constructor(props) {
     super(props);
     this.dragListener = null;
@@ -32,7 +31,7 @@ export class PanTo extends React.Component {
       lng: this.props.location.lng
     });
     if (this.props.location.locationType !== LocationTypes.VEHICLE) {
-      store.dispatch(clearLocation());
+      this.props.onClearLocation();
     }
   }
 
@@ -48,7 +47,7 @@ export class PanTo extends React.Component {
   }
 
   handleDragStart() {
-    store.dispatch(clearLocation());
+    this.props.onClearLocation();
   }
 
   removeMapListeners() {
@@ -72,3 +71,13 @@ PanTo.propTypes = {
   }),
   map: PropTypes.object
 };
+
+function mapDispatchToProps(dispatch) {
+  return {
+    onClearLocation: () => {
+      dispatch(clearLocation());
+    }
+  };
+}
+
+export default connect(null, mapDispatchToProps)(PanTo);

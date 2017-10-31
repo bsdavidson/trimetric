@@ -5,9 +5,8 @@ import {connect} from "react-redux";
 
 import {degreeToCompass} from "../helpers/directions";
 import {updateLocation, LocationTypes} from "../actions";
-import {store} from "../store";
 
-export class ArrivalListItem extends React.Component {
+class ArrivalListItem extends React.Component {
   constructor(props) {
     super(props);
     this.handleVehicleClick = this.handleVehicleClick.bind(this);
@@ -18,15 +17,7 @@ export class ArrivalListItem extends React.Component {
       this.props.locationClicked &&
       this.props.arrival.vehicleID === this.props.locationClicked.id
     ) {
-      store.dispatch(
-        updateLocation(
-          LocationTypes.HOME,
-          null,
-          this.props.location.lat,
-          this.props.location.lng,
-          false
-        )
-      );
+      this.props.clearLocation(this.props.location);
     }
   }
 
@@ -34,15 +25,7 @@ export class ArrivalListItem extends React.Component {
     if (window) {
       window.scrollTo(0, 0);
     }
-    store.dispatch(
-      updateLocation(
-        LocationTypes.VEHICLE,
-        this.props.arrival.vehicleID,
-        this.props.arrival.latitude,
-        this.props.arrival.longitude,
-        true
-      )
-    );
+    this.props.onVehicleClick(LocationTypes.VEHICLE, this.props.arrival);
   }
 
   render() {
@@ -105,6 +88,33 @@ ArrivalListItem.propTypes = {
   locationClicked: PropTypes.object
 };
 
+function mapDispatchToProps(dispatch) {
+  return {
+    onVehicleClick: (type, arrival) => {
+      dispatch(
+        updateLocation(
+          type,
+          arrival.vehicleID,
+          arrival.latitude,
+          arrival.longitude,
+          true
+        )
+      );
+    },
+    clearLocation: location => {
+      dispatch(
+        updateLocation(
+          LocationTypes.HOME,
+          null,
+          location.lat,
+          location.lng,
+          false
+        )
+      );
+    }
+  };
+}
+
 function mapStateToProps(state) {
   return {
     location: state.location,
@@ -112,4 +122,6 @@ function mapStateToProps(state) {
   };
 }
 
-export default withRouter(connect(mapStateToProps)(ArrivalListItem));
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ArrivalListItem)
+);

@@ -8,7 +8,6 @@ import {updateLocation, LocationTypes} from "../actions";
 import {buildQuery} from "../helpers/http";
 import {formatEstimate} from "../helpers/times";
 import {ColorMap} from "../helpers/colors";
-import {store} from "../store";
 
 let colorMap = new ColorMap();
 
@@ -35,15 +34,7 @@ export class ArrivalList extends React.Component {
   }
 
   handleRouteNameClick() {
-    store.dispatch(
-      updateLocation(
-        LocationTypes.STOP,
-        this.props.stop.locid,
-        this.props.stop.lat,
-        this.props.stop.lng,
-        false
-      )
-    );
+    this.props.onRouteNameClick(this.props.stop);
   }
 
   render() {
@@ -100,10 +91,28 @@ ArrivalList.propTypes = {
   }).isRequired
 };
 
+function mapDispatchToProps(dispatch) {
+  return {
+    onRouteNameClick: stop => {
+      dispatch(
+        updateLocation(
+          LocationTypes.STOP,
+          stop.locid,
+          stop.lat,
+          stop.lng,
+          false
+        )
+      );
+    }
+  };
+}
+
 function mapStateToProps(state) {
   return {
     location: state.location
   };
 }
 
-export default withRouter(connect(mapStateToProps)(ArrivalList));
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ArrivalList)
+);

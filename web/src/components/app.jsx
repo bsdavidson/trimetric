@@ -1,15 +1,14 @@
 import moment from "moment";
 import React, {Component} from "react";
 import {withRouter} from "react-router-dom";
-// import PropTypes from "prop-types";
 import {connect} from "react-redux";
 import ReactCSSTransitionGroup from "react-addons-css-transition-group";
 
 import ArrivalList from "./arrival_list";
-import {ArrivalMarkers} from "./arrival_markers";
+import ArrivalMarkers from "./arrival_markers";
 import {Map} from "./map";
 import Marker from "./marker";
-import {PanTo} from "./pan_to";
+import PanTo from "./pan_to";
 import StopList from "./stop_list";
 
 class App extends Component {
@@ -64,7 +63,7 @@ class App extends Component {
       <div className="app">
         <nav>
           <div className="app-query-time">
-            Updated asdsdfadfsd: {moment(queryTime).format("h:mm:ss a")}
+            Updated: {moment(queryTime).format("h:mm:ss a")}
           </div>
         </nav>
         <Map
@@ -86,11 +85,6 @@ class App extends Component {
     );
   }
 }
-
-// AppX.propTypes = {
-//   route: PropTypes.object.isRequired,
-//   params: PropTypes.object
-// };
 
 function mapStateToProps(state) {
   return {
