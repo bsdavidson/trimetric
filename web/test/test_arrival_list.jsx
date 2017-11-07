@@ -4,12 +4,19 @@ import {shallow} from "enzyme";
 import {ArrivalList} from "../src/components/arrival_list";
 import {ArrivalListItem} from "../src/components/arrival_list_item";
 import {getMockCombinedData, adjustTime} from "./mock_data";
-import {store} from "../src/store";
 
 describe("<ArrivalsList />", () => {
   beforeEach(function() {
     let mockStop = adjustTime(getMockCombinedData()).stops[0];
-    this.wrapper = shallow(<ArrivalList stop={mockStop} />);
+    this.clickedStop = null;
+    this.wrapper = shallow(
+      <ArrivalList
+        stop={mockStop}
+        onRouteNameClick={stop => {
+          this.clickedStop = stop;
+        }}
+      />
+    );
   });
 
   it("should render Stop Title", function() {
@@ -27,12 +34,11 @@ describe("<ArrivalsList />", () => {
   });
 
   it("should update location when Stop is clicked", function() {
-    assert.equal(store.getState().locationClicked, null);
     this.wrapper
       .find("h3")
       .first()
       .simulate("click");
-    assert.equal(store.getState().locationClicked.id, 6158);
+    assert.equal(this.clickedStop.locid, 6158);
   });
 });
 

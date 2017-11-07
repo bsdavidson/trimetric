@@ -77,6 +77,7 @@ ArrivalList.propTypes = {
     lat: PropTypes.number.isRequired,
     lng: PropTypes.number.isRequired
   }),
+  onRouteNameClick: PropTypes.func.isRequired,
   stop: PropTypes.shape({
     arrivals: PropTypes.arrayOf(
       PropTypes.shape({

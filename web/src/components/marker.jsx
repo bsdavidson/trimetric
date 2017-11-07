@@ -2,7 +2,8 @@ import deepEqual from "deep-equal";
 import React from "react";
 import PropTypes from "prop-types";
 
-export default class Marker extends React.Component {
+/** @augments {React.Component<any, any>} */
+class Marker extends React.Component {
   constructor(props) {
     super(props);
     this.prevOpts = null;
@@ -58,3 +59,5 @@ Marker.propTypes = {
     position: PropTypes.object.isRequired
   }).isRequired
 };
+
+export default Marker;

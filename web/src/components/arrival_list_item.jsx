@@ -6,7 +6,7 @@ import {connect} from "react-redux";
 import {degreeToCompass} from "../helpers/directions";
 import {updateLocation, LocationTypes} from "../actions";
 
-class ArrivalListItem extends React.Component {
+export class ArrivalListItem extends React.Component {
   constructor(props) {
     super(props);
     this.handleVehicleClick = this.handleVehicleClick.bind(this);

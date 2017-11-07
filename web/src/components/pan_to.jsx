@@ -3,7 +3,7 @@ import {connect} from "react-redux";
 import PropTypes from "prop-types";
 import {clearLocation, LocationTypes} from "../actions";
 
-class PanTo extends React.Component {
+export class PanTo extends React.Component {
   constructor(props) {
     super(props);
     this.dragListener = null;

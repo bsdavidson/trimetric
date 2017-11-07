@@ -2,7 +2,7 @@ import "whatwg-fetch";
 import fetchPonyfill from "fetch-ponyfill";
 import moment from "moment";
 
-import {updateData} from "./actions";
+import {updateData, updateLocation} from "./actions";
 import {buildQuery} from "./helpers/http";
 
 const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
@@ -167,13 +167,40 @@ export class Trimet {
 
   update() {
     let {lat, lng} = this.store.getState().location;
+
     let newData = this.fetchData(lat, lng);
-    newData.then(data => {
-      this.store.dispatch(
-        updateData(data.stops, data.vehicles, data.queryTime)
-      );
-      this.timeout();
-    });
+    newData
+      .then(data => {
+        this.store.dispatch(
+          updateData(data.stops, data.vehicles, data.queryTime)
+        );
+        let lc = this.store.getState().locationClicked;
+        if (lc) {
+          data.vehicles.forEach(v => {
+            if (lc.id !== v.vehicleID) {
+              return;
+            }
+            if (lc.lat === v.latitude && lc.lng === v.longitude) {
+              return;
+            }
+            this.store.dispatch(
+              updateLocation(
+                lc.locationType,
+                lc.id,
+                v.latitude,
+                v.longitude,
+                lc.following
+              )
+            );
+          });
+        }
+
+        this.timeout();
+      })
+      .catch(err => {
+        this.timeout();
+        throw err;
+      });
   }
 }
 

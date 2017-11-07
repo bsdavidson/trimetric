@@ -1,10 +1,8 @@
-import deepEqual from "deep-equal";
 import React from "react";
 import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
 import PropTypes from "prop-types";
 
-import {updateLocation, LocationTypes} from "../actions";
 import Marker from "./marker";
 
 const VEHICLE_ICON_MAP = {
@@ -12,7 +10,7 @@ const VEHICLE_ICON_MAP = {
   rail: "tram"
 };
 
-class ArrivalMarkers extends React.Component {
+export class ArrivalMarkers extends React.Component {
   constructor(props) {
     super(props);
     this.markers = [];
@@ -27,13 +25,6 @@ class ArrivalMarkers extends React.Component {
       name: stop.desc,
       animation: this.props.google.maps.Animation.DROP
     };
-  }
-
-  isFollowing(arrival) {
-    return (
-      this.props.locationClicked &&
-      this.props.locationClicked.id === arrival.vehicleID
-    );
   }
 
   getVehicleOpts(arrival) {
@@ -51,24 +42,12 @@ class ArrivalMarkers extends React.Component {
     };
   }
 
-  componentWillMount() {
+  render() {
     let {stop, google, map} = this.props;
     if (!stop || !stop.arrivals || !google || !map) {
       return null;
     }
     this.markers = stop.arrivals.map(a => {
-      let location = {
-        locationType: LocationTypes.VEHICLE,
-        id: a.vehicleID,
-        lat: a.latitude,
-        lng: a.longitude,
-        following: true
-      };
-      if (this.isFollowing(a)) {
-        if (!deepEqual(this.props.locationClicked, location)) {
-          this.props.updateLocation(location);
-        }
-      }
       return (
         <Marker
           key={a.vehicleID}
@@ -86,9 +65,6 @@ class ArrivalMarkers extends React.Component {
         opts={this.getStopOpts(this.props.stop)}
       />
     );
-  }
-
-  render() {
     return <div>{this.markers}</div>;
   }
 }
@@ -119,28 +95,10 @@ ArrivalMarkers.propTypes = {
   }).isRequired
 };
 
-function mapDispatchToProps(dispatch) {
-  return {
-    updateLocation: location => {
-      dispatch(
-        updateLocation(
-          location.locationType,
-          location.id,
-          location.lat,
-          location.lng,
-          location.following
-        )
-      );
-    }
-  };
-}
-
 function mapStateToProps(state) {
   return {
     locationClicked: state.locationClicked
   };
 }
 
-export default withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(ArrivalMarkers)
-);
+export default withRouter(connect(mapStateToProps)(ArrivalMarkers));
