@@ -10,6 +10,6 @@ WORKDIR /opt/trimetric
 
 EXPOSE 80
 
-VOLUME ["/opt/trimetric" ]
+VOLUME ["/opt/trimetric"]
 
 CMD ["./trimetric"]

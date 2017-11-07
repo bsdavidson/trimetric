@@ -1,136 +1,26 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
+	"os/signal"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/bsdavidson/trimetric/api"
+	"github.com/bsdavidson/trimetric/logic"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq"
 )
 
-func handleVehicles(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vehicles := []Vehicle{}
-		q := `SELECT id, vehicle_id, type, sign_message
-					FROM vehicles ORDER BY vehicle_id`
-		rows, err := db.Query(q)
-		if err != nil {
-			log.Println("db.Query:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		for rows.Next() {
-			var v Vehicle
-			if err := rows.Scan(&v.ID, &v.VehicleID, &v.Type, &v.SignMessage); err != nil {
-				log.Println("rows.Scan:", err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			vehicles = append(vehicles, v)
-		}
-		if err := rows.Err(); err != nil {
-			log.Println("rows.Err:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		b, err := json.Marshal(vehicles)
-		if err != nil {
-			log.Println("json.Marshal:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if _, err := w.Write(b); err != nil {
-			log.Println("w.Write:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-// TrimetVehicleResponse ...
-type TrimetVehicleResponse struct {
-	ResultSet TrimetVehicleResultSet `json:"resultSet"`
-}
-
-// TrimetVehicleResultSet ...
-type TrimetVehicleResultSet struct {
-	QueryTime int             `json:"queryTime"`
-	Vehicles  []TrimetVehicle `json:"vehicle"`
-}
-
-// TrimetVehicle ...
-type TrimetVehicle struct {
-	VehicleID   int    `json:"vehicleID"`
-	Type        string `json:"type"`
-	SignMessage string `json:"signMessage"`
-}
-
-// Vehicle ...
-type Vehicle struct {
-	ID          int    `json:"id"`
-	VehicleID   int    `json:"vehicle_id"`
-	Type        string `json:"type"`
-	SignMessage string `json:"sign_message"`
-}
-
-// https://developer.trimet.org/ws/v2/vehicles?appID=65795DCAB40706D335474B716&json=true
-
-func requestVehicles(apiKey string) (*TrimetVehicleResponse, error) {
-	query := url.Values{}
-	query.Set("appID", apiKey)
-	query.Set("json", "true")
-	resp, err := http.Get("https://developer.trimet.org/ws/v2/vehicles?" + query.Encode())
-	if err != nil {
-		return nil, fmt.Errorf("http.Get: %s", err)
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll: %s", err)
-	}
-	var tr TrimetVehicleResponse
-	err = json.Unmarshal(b, &tr)
-	if err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %s", err)
-	}
-	return &tr, nil
-}
-
-func pollVehicles(db *sql.DB, apiKey string) {
-	for {
-		time.Sleep(time.Second)
-		tr, err := requestVehicles(apiKey)
-		if err != nil {
-			log.Println("requestVehicles:", err)
-			continue
-		}
-		for _, tv := range tr.ResultSet.Vehicles {
-			v := Vehicle{
-				VehicleID:   tv.VehicleID,
-				Type:        tv.Type,
-				SignMessage: tv.SignMessage,
-			}
-
-			q := `INSERT INTO vehicles (vehicle_id, type, sign_message)
-						VALUES ($1, $2, $3)
-						ON CONFLICT (vehicle_id) DO UPDATE SET
-							type = EXCLUDED.type,
-							sign_message = EXCLUDED.sign_message;
-					 `
-			_, err := db.Exec(q, v.VehicleID, v.Type, v.SignMessage)
-			if err != nil {
-				log.Println("db.Exec:", err)
-			}
-		}
-	}
-}
+const apiKeyPath = "/run/secrets/trimet-api-key"
 
 func main() {
 	addr := flag.String("addr", ":80", "Address to bind to")
@@ -139,12 +29,14 @@ func main() {
 	pgPassword := flag.String("pg-password", "example", "Postgres password")
 	pgHost := flag.String("pg-host", "postgres", "Postgres hostname")
 	pgDatabase := flag.String("pg-database", "trimetric", "Postgres database")
+	redisAddr := flag.String("redis", "redis:6379", "Redis address")
 	flag.Parse()
 
-	apiKey := os.Getenv("TRIMET_API_KEY")
-	if apiKey == "" {
-		log.Fatal("TRIMET_API_KEY must be set")
+	b, err := ioutil.ReadFile(apiKeyPath)
+	if err != nil {
+		log.Fatalf("Error reading %s: %v", apiKeyPath, err)
 	}
+	apiKey := strings.TrimSpace(string(b))
 
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", *pgUser, *pgPassword, *pgHost, *pgDatabase)
 	db, err := sql.Open("postgres", dbURL)
@@ -155,12 +47,65 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go pollVehicles(db, apiKey)
+	vds := &logic.VehicleSQLDataset{DB: db}
+	sds := &logic.StopSQLDataset{DB: db}
 
-	http.HandleFunc("/api/v1/vehicles", handleVehicles(db))
+	redisPool := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", *redisAddr) },
+	}
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-signals
+		cancel()
+	}()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		if err := logic.ProduceVehicles(ctx, strings.TrimSpace(apiKey)); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := logic.ConsumeVehicles(ctx, vds); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		logic.PollStops(ctx, sds, redisPool, 24*time.Hour)
+	}()
+
+	srv := &http.Server{Addr: *addr, Handler: http.DefaultServeMux}
+	http.HandleFunc("/api/v1/vehicles", api.HandleVehicles(vds))
+	http.HandleFunc("/api/v1/arrivals", api.HandleArrivals(apiKey))
+	http.HandleFunc("/api/v1/stops", api.HandleStops(sds))
+	// http.HandleFunc("/api/v1/gtfs", api.HandleGTFS())
 	http.Handle("/", http.FileServer(http.Dir(*webPath)))
 	log.Printf("Serving requests on %s", *addr)
-	if err := http.ListenAndServe(*addr, nil); err != nil {
-		log.Fatal(err)
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Println(err)
 	}
+	wg.Wait()
 }

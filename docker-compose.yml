@@ -1,4 +1,4 @@
-version: '3'
+version: '3.3'
 services:
   api:
     build:
@@ -9,22 +9,24 @@ services:
       - "-exclude-dir=.git"
       - "-exclude-dir=node_modules"
       - "-exclude-dir=web"
-      - "-build=go install github.com/bsdavidson/trimetric/cmd/trimetric"
+      - "-graceful-kill=true"
+      - "-build=go build -o /go/bin/trimetric github.com/bsdavidson/trimetric/cmd/trimetric"
       - "-command=/go/bin/trimetric"
     depends_on:
+      - kafka
       - postgres
       - redis
-    environment:
-      TRIMET_API_KEY:
     image: trimetric-api
     ports:
       - "8181:80"
+    secrets:
+      - trimet-api-key
     volumes:
       - .:/go/src/github.com/bsdavidson/trimetric
     working_dir: /go/src/github.com/bsdavidson/trimetric
 
   kafka:
-    image: wurstmeister/kafka
+    image: wurstmeister/kafka:0.10.2.1
     depends_on:
       - zookeeper
     environment:
@@ -37,7 +39,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
-    image: postgres:alpine
+    image: mdillon/postgis
     environment:
       POSTGRES_PASSWORD: example
     volumes:
@@ -45,6 +47,8 @@ services:
 
   redis:
     image: redis:alpine
+    ports:
+      - "6379:6379"
 
   web:
     build:
@@ -67,6 +71,12 @@ services:
     image: zookeeper
     ports:
       - "2181:2181"
+
+secrets:
+  google-maps-api-key:
+    file: ./secrets/google-maps-api-key
+  trimet-api-key:
+    file: ./secrets/trimet-api-key
 
 volumes:
   pgdata: {}
