@@ -1,20 +1,24 @@
 // Locations 6158, 6160, 8381, 7586, 7642
 
 export function getMockStopsResponse() {
-  return {
-    resultSet: {
-      queryTime: "2016-07-04T11:00:53.988-0700",
-      location: [
-        {
-          lng: -122.67459934134,
-          dir: "Westbound",
-          lat: 45.519590161127,
-          locid: 6158,
-          desc: "SW Washington & 3rd"
-        }
-      ]
+  return [
+    {
+      id: "6158",
+      code: "6158",
+      name: "SW Washington \u0026 3rd",
+      desc: "Westbound stop in Portland (Stop ID 6158)",
+      lat: 45.51959,
+      lon: -122.674599,
+      zone_id: "B",
+      stop_url: "http://trimet.org/#tracker/stop/6158",
+      location_type: 0,
+      parent_station: "",
+      direction: "West",
+      position: "Nearside",
+      wheelchair_boarding: 0,
+      distance: 0.032123862
     }
-  };
+  ];
 }
 
 export function getMockArrivalsResponse() {
@@ -136,42 +140,37 @@ export function getMockArrivalsResponse() {
 }
 
 export function getMockVehiclesResponse() {
-  return {
-    resultSet: {
-      queryTime: 1467954664375,
-      vehicle: [
-        {
-          expires: 1467954885000,
-          signMessage: "15 Montgomery Pk",
-          serviceDate: 1467874800000,
-          loadPercentage: 0,
-          latitude: 45.5163309,
-          nextStopSeq: 24,
-          type: "bus",
-          blockID: 1508,
-          signMessageLong: "15  Belmont/NW 23rd to Montgomery Park",
-          lastLocID: 7899,
-          nextLocID: 6446,
-          locationInScheduleDay: 79713,
-          newTrip: false,
-          longitude: -122.5871591,
-          direction: 0,
-          inCongestion: false,
-          routeNumber: 15,
-          bearing: 270,
-          garage: "CENTER",
-          tripID: "6484445",
-          delay: -132,
-          extraBlockID: null,
-          messageCode: 138,
-          lastStopSeq: 23,
-          vehicleID: 2629,
-          time: 1467954646616,
-          offRoute: false
-        }
-      ]
+  return [
+    {
+      expires: 1467954885000,
+      signMessage: "15 Montgomery Pk",
+      serviceDate: 1467874800000,
+      loadPercentage: 0,
+      latitude: 45.5163309,
+      nextStopSeq: 24,
+      type: "bus",
+      blockID: 1508,
+      signMessageLong: "15  Belmont/NW 23rd to Montgomery Park",
+      lastLocID: 7899,
+      nextLocID: 6446,
+      locationInScheduleDay: 79713,
+      newTrip: false,
+      longitude: -122.5871591,
+      direction: 0,
+      inCongestion: false,
+      routeNumber: 15,
+      bearing: 270,
+      garage: "CENTER",
+      tripID: "6484445",
+      delay: -132,
+      extraBlockID: null,
+      messageCode: 138,
+      lastStopSeq: 23,
+      vehicleID: 2629,
+      time: 1467954646616,
+      offRoute: false
     }
-  };
+  ];
 }
 
 export function adjustTime(combinedData) {
@@ -210,8 +209,8 @@ export function getMockCombinedData() {
     queryTime: 1467655255669,
     stops: [
       {
-        lng: -122.67459934134,
-        lat: 45.519590161127,
+        lng: -122.674599,
+        lat: 45.51959,
         locid: 6158,
         desc: "SW Washington & 3rd",
         arrivals: [

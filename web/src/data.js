@@ -1,3 +1,5 @@
+// @ts-check
+
 import "whatwg-fetch";
 import fetchPonyfill from "fetch-ponyfill";
 import moment from "moment";
@@ -9,75 +11,77 @@ const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
 
 const UPDATE_TIMEOUT = 1000;
 const API_ENDPOINTS = {
-  stops: "https://developer.trimet.org/ws/V1/stops",
-  arrivals: "https://developer.trimet.org/ws/v2/arrivals",
-  vehicles: "https://developer.trimet.org/ws/v2/vehicles",
-  routes: "https://developer.trimet.org/ws/V1/routeConfig"
+  stops: "/api/v1/stops",
+  arrivals: "/api/v1/arrivals",
+  vehicles: "/api/v1/vehicles"
 };
 
 export class Trimet {
-  constructor(store, fetch = fetch) {
+  constructor(store, _fetch = fetch) {
     this.appId = process.env.TRIMET_API_KEY;
     this.stopsCache = {
       location: {
         lat: null,
         lng: null
       },
-      data: null
+      stops: null
     };
+    this.fetchStopsID = 0;
     this.routesCache = {dir0: {}, dir1: {}};
-    this.vehicleCache = {};
-    this.lastVehicleQueryTime = 100;
     this.store = store;
-    this.fetch = fetch;
+    this.fetch = _fetch;
     this.running = false;
     this.timeoutID = null;
   }
 
   fetchStops(lat, lng) {
-    if (this.stopsCache) {
-      if (
-        this.stopsCache.location &&
-        this.stopsCache.location.lat === lat &&
-        this.stopsCache.location.lng === lng
-      ) {
-        return Promise.resolve(this.stopsCache.data);
-      } else {
-        this.stopsCache = {
-          data: null,
-          location: {lat: lat, lng: lng}
-        };
-      }
+    this.fetchStopsID++;
+    let id = this.fetchStopsID;
+    if (
+      this.stopsCache.location.lat === lat &&
+      this.stopsCache.location.lng === lng
+    ) {
+      return Promise.resolve(this.stopsCache.stops);
     }
 
     let stopsAPIURL =
       API_ENDPOINTS.stops +
       "?" +
       buildQuery({
-        appID: this.appId,
-        json: true,
-        ll: lat + "," + lng,
-        feet: 5000
+        lat: lat,
+        lng: lng,
+        distance: 200
       });
-    return this.fetch(stopsAPIURL).then(response => response.json());
+    return this.fetch(stopsAPIURL)
+      .then(response => response.json())
+      .then(data => {
+        if (id === this.fetchStopsID) {
+          this.stopsCache = {
+            location: {lat: lat, lng: lng},
+            stops: data.stops
+          };
+        }
+        return data.stops;
+      });
   }
 
   // FIXME: Add protection against no returned Stops.
   fetchArrivals(stops) {
-    if (!this.stopsCache.data) {
-      this.stopsCache.data = {};
-      this.stopsCache.data = Object.assign({}, this.stopsCache.data, stops);
+    if (!stops) {
+      throw new Error("no stops");
     }
-    let locations = stops.resultSet.location.map(location => location.locid);
+    let locations = stops.map(location => +location.id);
     // Trimet limits locations in arrivals API to 10
-    locations.length = 8;
+
+    if (locations.length > 8) {
+      locations.length = 8;
+    }
+
     let arrivalsAPIURL =
       API_ENDPOINTS.arrivals +
       "?" +
       buildQuery({
-        appID: this.appId,
-        json: true,
-        locIDs: locations
+        locIDs: locations.join(",")
       });
     return this.fetch(arrivalsAPIURL).then(response => response.json());
   }
@@ -95,42 +99,11 @@ export class Trimet {
       return [];
     }
 
-    if (fetchAll) {
-      params.appID = this.appId;
-      params.json = true;
-    } else {
-      params.appID = this.appId;
-      params.json = true;
+    if (!fetchAll) {
       params.ids = vehicles;
     }
     let vehiclesAPIURL = API_ENDPOINTS.vehicles + "?" + buildQuery(params);
     return this.fetch(vehiclesAPIURL).then(response => response.json());
-  }
-
-  fetchRoute(route) {
-    if (!route) {
-      throw new Error("route argument cannot be undefined");
-    }
-    let params = {
-      appID: this.appID,
-      json: true,
-      stops: true,
-      route: route
-    };
-
-    let routesAPIURL = API_ENDPOINTS.routes + "?" + buildQuery(params);
-    return this.fetch(routesAPIURL).then(response => response.json());
-  }
-
-  fetchAllRoutes() {
-    let params = {
-      appID: this.appID,
-      json: true,
-      stops: true
-    };
-
-    let routesAPIURL = API_ENDPOINTS.routes + "?" + buildQuery(params);
-    return this.fetch(routesAPIURL).then(response => response.json());
   }
 
   fetchData(lat, lng) {
@@ -214,20 +187,17 @@ export function combineResponses(stops, arrivals, vehicles) {
   if (!vehicles) {
     throw new Error("vehicles argument cannot be undefined");
   }
-
-  let response = stops.resultSet.location.map(location => {
-    let loc = {
-      lng: location.lng,
-      lat: location.lat,
-      locid: location.locid,
-      desc: location.desc
+  let newStops = stops.map(stop => {
+    let newStop = {
+      lng: stop.lon,
+      lat: stop.lat,
+      locid: parseInt(stop.id, 10),
+      desc: stop.name
     };
-    loc.arrivals = arrivals.resultSet.arrival
-      .filter(a => a.locid === location.locid && a.feet)
+    newStop.arrivals = arrivals.resultSet.arrival
+      .filter(a => +a.locid === +newStop.locid && a.feet)
       .map(arrival => {
-        let vehicle = vehicles.resultSet.vehicle.find(
-          v => v.vehicleID == arrival.vehicleID
-        );
+        let vehicle = vehicles.find(v => +v.vehicleID == +arrival.vehicleID);
         if (!vehicle) {
           vehicle = {
             latitude: 0,
@@ -251,14 +221,13 @@ export function combineResponses(stops, arrivals, vehicles) {
           vehicleID: arrival.vehicleID
         };
       });
-    return loc;
+    return newStop;
   });
-
   return {
     queryTime: moment(arrivals.resultSet.queryTime).valueOf(),
-    stops: response,
+    stops: newStops,
     vehicles: {
-      arrivals: vehicles.resultSet.vehicle
+      arrivals: vehicles
     }
   };
 }
