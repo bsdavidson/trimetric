@@ -1,7 +1,6 @@
 package trimet
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,36 +9,8 @@ import (
 	"strings"
 )
 
-// ArrivalResponse ...
-type ArrivalResponse struct {
-	ResultSet ArrivalResultSet `json:"resultSet"`
-}
-
-// ArrivalResultSet ...
-type ArrivalResultSet struct {
-	QueryTime int64         `json:"queryTime"`
-	Arrivals  []ArrivalData `json:"arrival"`
-}
-
-// ArrivalData ...
-type ArrivalData struct {
-	LocationID int    `json:"locid"`
-	Data       []byte `json:"-"`
-}
-
-type arrivalDataAlias ArrivalData
-
-// UnmarshalJSON ...
-func (t *ArrivalData) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, (*arrivalDataAlias)(t)); err != nil {
-		return err
-	}
-	t.Data = make([]byte, len(b))
-	copy(t.Data, b)
-	return nil
-}
-
-// RequestArrivals ...
+// RequestArrivals makes a request to the trimet arrivals API endpoint.
+// It MUST have an array of ids as trimet limits reponses to 10 locations.
 func RequestArrivals(apiKey string, ids []int) ([]byte, error) {
 	query := url.Values{}
 
@@ -54,12 +25,12 @@ func RequestArrivals(apiKey string, ids []int) ([]byte, error) {
 
 	resp, err := http.Get(fmt.Sprintf("%s?%s", Arrivals, query.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("http.Get: %s", err)
+		return nil, fmt.Errorf("trimet.RequestArrivals: %s", err)
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll: %s", err)
+		return nil, fmt.Errorf("trimet.RequestArrivals: %s", err)
 	}
 
 	return b, nil

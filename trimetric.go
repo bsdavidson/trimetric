@@ -16,7 +16,7 @@ import (
 	"github.com/pressly/goose"
 )
 
-// OpenDB ...
+// OpenDB connects to the database.
 func OpenDB(url string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", url)
 	if err != nil {
@@ -28,7 +28,9 @@ func OpenDB(url string) (*sql.DB, error) {
 	return db, nil
 }
 
-// MigrateDB ...
+// MigrateDB applies any updates needed to the database to bring it up to the
+// latest version of the schema. If migrate is false, then it won't modify the DB
+// but will instead return an error if the database is not up-to-date.
 func MigrateDB(db *sql.DB, path string, migrate bool) error {
 	dbVer, err := goose.EnsureDBVersion(db)
 	if err != nil {
@@ -55,9 +57,8 @@ func MigrateDB(db *sql.DB, path string, migrate bool) error {
 	return nil
 }
 
-// Run ...
+// Run starts all the processes for Trimetric.
 func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db *sql.DB, redisAddr, webPath string) error {
-
 	vds := &logic.VehicleSQLDataset{DB: db}
 	sds := &logic.StopSQLDataset{DB: db}
 

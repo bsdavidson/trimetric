@@ -5,12 +5,11 @@ import (
 	"encoding/csv"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 )
 
-// Stop ...
+// Stop represents a single stop from a GTFS feed.
 type Stop struct {
 	ID                 string  `json:"id"`
 	Code               string  `json:"code"`
@@ -27,9 +26,9 @@ type Stop struct {
 	WheelchairBoarding int     `json:"wheelchair_boarding"`
 }
 
-// RequestStops ...
+// RequestStops makes a request to download the current GTFS data set from Trimet.
+// It returns an array of stops from the file.
 func RequestStops() ([][]string, error) {
-	log.Println("Fetching Stops")
 	f, err := ioutil.TempFile("", "tmp")
 	if err != nil {
 		return nil, err
@@ -72,6 +71,5 @@ func RequestStops() ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Done getting stops")
 	return stops, nil
 }

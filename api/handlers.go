@@ -40,14 +40,26 @@ type stopsWithDistanceResponse struct {
 	Stops []logic.StopWithDistance `json:"stops"`
 }
 
-// HandleStops ...
+// HandleStops provides responses for the /api/v1/stops endpoint.
+// It searches for stops within a specified distance from a lat/lng.
 func HandleStops(sd logic.StopDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lat := r.URL.Query().Get("lat")
 		lng := r.URL.Query().Get("lng")
 		dist := r.URL.Query().Get("distance")
 
-		// FIXME: parse & check queries
+		if lat == "" {
+			httpError(w, "HandleStops:", fmt.Errorf("Latitude cannot be blank"), http.StatusBadRequest)
+			return
+		}
+		if lng == "" {
+			httpError(w, "HandleStops:", fmt.Errorf("Longitude cannot be blank"), http.StatusBadRequest)
+			return
+		}
+		if dist == "" {
+			httpError(w, "HandleStops:", fmt.Errorf("Distance cannot be blank"), http.StatusBadRequest)
+			return
+		}
 
 		stops, err := sd.FetchWithinDistance(lat, lng, dist)
 		if err != nil {
@@ -68,7 +80,9 @@ func HandleStops(sd logic.StopDataset) http.HandlerFunc {
 	}
 }
 
-// HandleArrivals ...
+// HandleArrivals provides responses for the /api/v1/arrivals endpoint.
+// It proxies requests mostly untouched to the trimet API and returns a list of
+// arrivals for the specified location IDs.
 func HandleArrivals(apiKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -89,7 +103,9 @@ func HandleArrivals(apiKey string) http.HandlerFunc {
 	}
 }
 
-// HandleVehicles ...
+// HandleVehicles provides responses for the /api/v1/vehicles endpoint.
+// It returns a list of vehicles pulled from a local DB, optionally filtered
+// by a list of IDs.
 func HandleVehicles(vd logic.VehicleDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ids, err := commaSplitInts(r.URL.Query().Get("ids"))

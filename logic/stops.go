@@ -20,24 +20,28 @@ func rollbackError(fn string, rberr error, err error) error {
 	return fmt.Errorf("%s: error rolling back: %s (for %s)", fn, rberr, err)
 }
 
-// StopWithDistance ...
+// StopWithDistance augments the Stop struct with a distance field.
+// Distance is calculated via PostGIS and the result is used to
+// provide a list of stops within a specified distance from a specific point.
 type StopWithDistance struct {
 	trimet.Stop
 	Distance float64 `json:"distance"`
 }
 
-// StopDataset ...
+// StopDataset provides methods to query and update a database table of Stops
 type StopDataset interface {
 	FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error)
 	UpsertAll(stops [][]string) error
 }
 
-// StopSQLDataset ...
+// StopSQLDataset stores a DB instance and provides access to methods to
+// retrieve and update stops from the database
 type StopSQLDataset struct {
 	DB *sql.DB
 }
 
-// FetchWithinDistance ...
+// FetchWithinDistance takes a point (lat,lng) and finds all stops located within 'dist'.
+// It uses the PostGIS extension to calculate the distance to stops stored in the DB.
 func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error) {
 	q := `SELECT id, code, name, "desc", lat_lon, zone_id, stop_url,
 							 location_type, parent_station, direction, position,
@@ -64,7 +68,8 @@ func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWith
 	return stops, nil
 }
 
-// UpsertAll ...
+// UpsertAll adds/updates stop data in the db. It takes a two dimensional array
+// of stops produced from processing a GTFS stops.txt file.
 func (sd *StopSQLDataset) UpsertAll(stops [][]string) error {
 	q := `INSERT INTO stops
 					(id, code, name, "desc", lat_lon, zone_id, stop_url, location_type,
@@ -118,7 +123,9 @@ func (sd *StopSQLDataset) UpsertAll(stops [][]string) error {
 	return nil
 }
 
-// PollStops ...
+// PollStops makes periodic queries to fetch a list of stops from Trimet.
+// It stores a timestamp of the last query in Redis and will only download if it has
+// been more than 24 hours since the last download.
 func PollStops(ctx context.Context, sd StopDataset, redisPool *redis.Pool, dur time.Duration) {
 	rc := redisPool.Get()
 	defer rc.Close()

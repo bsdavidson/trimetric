@@ -21,18 +21,18 @@ const (
 	Routes   = "https://developer.trimet.org/ws/V1/routeConfig"
 )
 
-// VehicleResponse ...
+// VehicleResponse is the top level of a Trimet API vehicle response
 type VehicleResponse struct {
 	ResultSet VehicleResultSet `json:"resultSet"`
 }
 
-// VehicleResultSet ...
+// VehicleResultSet is the inner wrapper of a Trimet API vehicle response.
 type VehicleResultSet struct {
 	QueryTime int64         `json:"queryTime"`
 	Vehicles  []VehicleData `json:"vehicle"`
 }
 
-// VehicleData ...
+// VehicleData is a single vehicle in a vehicle response
 type VehicleData struct {
 	VehicleID int    `json:"vehicleID"`
 	Data      []byte `json:"-"`
@@ -40,7 +40,8 @@ type VehicleData struct {
 
 type vehicleDataAlias VehicleData
 
-// UnmarshalJSON ...
+// UnmarshalJSON sets the VehicleID and stores the rest of the data on the Data field.
+// This allows us to pass the bytes to the client for processing.
 func (t *VehicleData) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, (*vehicleDataAlias)(t)); err != nil {
 		return err
@@ -50,10 +51,10 @@ func (t *VehicleData) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// RawVehicleData ...
+// RawVehicleData represents the raw JSON data for a single vehicle.
 type RawVehicleData map[string]interface{}
 
-// Scan ...
+// Scan unmarshals the raw JSON bytes stored in the DB into a map.
 func (vd *RawVehicleData) Scan(src interface{}) error {
 	b, ok := src.([]byte)
 	if !ok {
@@ -65,13 +66,12 @@ func (vd *RawVehicleData) Scan(src interface{}) error {
 	return nil
 }
 
-// RawVehicle ...
+// RawVehicle wraps raw vehicle data in a struct that contains
+// the VehicleID.
 type RawVehicle struct {
 	VehicleID int            `json:"vehicle_id"`
 	Data      RawVehicleData `json:"data"`
 }
-
-// https://developer.trimet.org/ws/v2/vehicles?appID=65795DCAB40706D335474B716&json=true
 
 // RequestVehicles contacts the Trimet Vehicles API and retrieves all vehicles
 // updated after the 'since' value. If no 'since' value is specified, it defaults
