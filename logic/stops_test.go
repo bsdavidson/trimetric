@@ -5,67 +5,30 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
+	"github.com/pressly/goose"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	_ "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
 	setupDb, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/?user=postgres&sslmode=disable")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer setupDb.Close()
-	if err := setupDb.Ping(); err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, setupDb.Ping())
 	_, err = setupDb.Exec("DROP DATABASE IF EXISTS test_trimetric")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = setupDb.Exec("CREATE DATABASE test_trimetric")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 	setupDb.Close()
 
 	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/test_trimetric?user=postgres&sslmode=disable")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	q1 := `CREATE TABLE raw_vehicles (
-		vehicle_id integer NOT NULL PRIMARY KEY,
-		data jsonb NOT NULL
-	);`
-	q2 := `CREATE EXTENSION Postgis`
-	q3 := `CREATE TABLE stops (
-		id text NOT NULL PRIMARY KEY,
-		code text NOT NULL DEFAULT '',
-		name text NOT NULL,
-		"desc" text NOT NULL DEFAULT '',
-		lat_lon geography(POINT) NOT NULL,
-		zone_id text NOT NULL DEFAULT '',
-		stop_url text NOT NULL DEFAULT '',
-		location_type integer NOT NULL DEFAULT 0,
-		parent_station text NOT NULL DEFAULT 0,
-		direction text NOT NULL DEFAULT '',
-		position text NOT NULL DEFAULT '',
-		wheelchair_boarding integer NOT NULL DEFAULT 0
-	);`
-
-	_, err = db.Query(q1)
-	assert.NoError(t, err)
-	_, err = db.Query(q2)
-	assert.NoError(t, err)
-	_, err = db.Query(q3)
-	assert.NoError(t, err)
-
+	require.NoError(t, goose.Up(db, "../migrations"))
 	return db
 }
 

@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/google/gtfs-realtime-bindings/golang/gtfs"
 )
 
 // Trimet API Routes
@@ -34,11 +38,11 @@ type VehicleData struct {
 	Data      []byte `json:"-"`
 }
 
-type VehicleDataAlias VehicleData
+type vehicleDataAlias VehicleData
 
 // UnmarshalJSON ...
 func (t *VehicleData) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, (*VehicleDataAlias)(t)); err != nil {
+	if err := json.Unmarshal(b, (*vehicleDataAlias)(t)); err != nil {
 		return err
 	}
 	t.Data = make([]byte, len(b))
@@ -97,36 +101,36 @@ func RequestVehicles(appID string, since int64) (*VehicleResponse, error) {
 }
 
 // RequestGTFS ...
-// func RequestGTFS() error {
-// 	client := &http.Client{}
-// 	url, err := url.Parse("http://developer.trimet.org/ws/gtfs/VehiclePositions?appID=65795DCAB40706D335474B716")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	req, err := http.NewRequest("GET", url.String(), nil)
-// 	if err != nil {
-// 		return err
-// 	}
-// 		resp, err := client.Do(req)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer resp.Body.Close()
-// 	body, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return err
-// 	}
+func RequestGTFS() error {
+	client := &http.Client{}
+	url, err := url.Parse("http://developer.trimet.org/ws/gtfs/VehiclePositions?appID=65795DCAB40706D335474B716")
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
-// 	feed := gtfs.FeedMessage{}
-// 	err = proto.Unmarshal(body, &feed)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Println("GTFS Entry Count:", len(feed.Entity))
-// 	for _, entity := range feed.Entity {
+	feed := gtfs.FeedMessage{}
+	err = proto.Unmarshal(body, &feed)
+	if err != nil {
+		return err
+	}
+	log.Println("GTFS Entry Count:", len(feed.Entity))
+	for _, entity := range feed.Entity {
 
-// 		fmt.Printf("----- %+v\n\n", entity.GetVehicle().)
-// 	}
+		fmt.Printf("----- %+v\n\n", entity.GetVehicle())
+	}
 
-// 	return nil
-// }
+	return nil
+}

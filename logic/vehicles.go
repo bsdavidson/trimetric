@@ -13,15 +13,18 @@ import (
 	"github.com/lib/pq"
 )
 
+// VehicleDataset ...
 type VehicleDataset interface {
 	FetchByIDs(ids []int) ([]trimet.RawVehicle, error)
 	Upsert(v *trimet.VehicleData) error
 }
 
+// VehicleSQLDataset ...
 type VehicleSQLDataset struct {
 	DB *sql.DB
 }
 
+// FetchByIDs ...
 func (vd *VehicleSQLDataset) FetchByIDs(ids []int) ([]trimet.RawVehicle, error) {
 
 	q := `SELECT vehicle_id, data
@@ -53,6 +56,7 @@ func (vd *VehicleSQLDataset) FetchByIDs(ids []int) ([]trimet.RawVehicle, error) 
 	return vehicles, nil
 }
 
+// Upsert ...
 func (vd *VehicleSQLDataset) Upsert(v *trimet.VehicleData) error {
 	q := `INSERT INTO raw_vehicles (vehicle_id, data)
 	VALUES ($1, $2)
@@ -108,8 +112,6 @@ func ProduceVehicles(ctx context.Context, apiKey string) error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // ConsumeVehicles monitors the Kafka 'vehicles' topic for new messages and

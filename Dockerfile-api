@@ -8,4 +8,5 @@ RUN go install github.com/bsdavidson/trimetric/cmd/trimetric
 
 VOLUME ["/go/src/github.com/bsdavidson/trimetric"]
 EXPOSE 80
+
 CMD [ "/go/bin/trimetric" ]

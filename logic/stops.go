@@ -20,20 +20,24 @@ func rollbackError(fn string, rberr error, err error) error {
 	return fmt.Errorf("%s: error rolling back: %s (for %s)", fn, rberr, err)
 }
 
+// StopWithDistance ...
 type StopWithDistance struct {
 	trimet.Stop
 	Distance float64 `json:"distance"`
 }
 
+// StopDataset ...
 type StopDataset interface {
 	FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error)
 	UpsertAll(stops [][]string) error
 }
 
+// StopSQLDataset ...
 type StopSQLDataset struct {
 	DB *sql.DB
 }
 
+// FetchWithinDistance ...
 func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error) {
 	q := `SELECT id, code, name, "desc", lat_lon, zone_id, stop_url,
 							 location_type, parent_station, direction, position,
@@ -60,6 +64,7 @@ func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWith
 	return stops, nil
 }
 
+// UpsertAll ...
 func (sd *StopSQLDataset) UpsertAll(stops [][]string) error {
 	q := `INSERT INTO stops
 					(id, code, name, "desc", lat_lon, zone_id, stop_url, location_type,

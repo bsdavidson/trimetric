@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// Stop ...
 type Stop struct {
 	ID                 string  `json:"id"`
 	Code               string  `json:"code"`

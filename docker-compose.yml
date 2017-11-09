@@ -11,7 +11,7 @@ services:
       - "-exclude-dir=web"
       - "-graceful-kill=true"
       - "-build=go build -o /go/bin/trimetric github.com/bsdavidson/trimetric/cmd/trimetric"
-      - "-command=/go/bin/trimetric"
+      - "-command=/go/bin/trimetric --migrate=true"
     depends_on:
       - kafka
       - postgres
@@ -56,7 +56,6 @@ services:
       dockerfile: Dockerfile-web
       args:
         - GOOGLE_MAPS_API_KEY
-        - TRIMET_API_KEY
     command: ["yarn", "run", "watch"]
     depends_on:
       - api

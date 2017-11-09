@@ -27,11 +27,11 @@ type ArrivalData struct {
 	Data       []byte `json:"-"`
 }
 
-type ArrivalDataAlias ArrivalData
+type arrivalDataAlias ArrivalData
 
 // UnmarshalJSON ...
 func (t *ArrivalData) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, (*ArrivalDataAlias)(t)); err != nil {
+	if err := json.Unmarshal(b, (*arrivalDataAlias)(t)); err != nil {
 		return err
 	}
 	t.Data = make([]byte, len(b))
