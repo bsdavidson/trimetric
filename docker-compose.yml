@@ -25,6 +25,26 @@ services:
       - .:/go/src/github.com/bsdavidson/trimetric
     working_dir: /go/src/github.com/bsdavidson/trimetric
 
+  chronograf:
+    image: chronograf:alpine
+    depends_on:
+      - influxdb
+    ports:
+      - "8888:8888"
+    volumes:
+      - chronograf:/var/lib/chronograf
+    command:
+      - "--influxdb-url=http://influxdb:8086"
+
+  influxdb:
+    image: influxdb:alpine
+    environment:
+      INFLUXDB_DB: trimetric
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb:/var/lib/influxdb
+
   kafka:
     image: wurstmeister/kafka:0.10.2.1
     depends_on:
@@ -78,4 +98,6 @@ secrets:
     file: ./secrets/trimet-api-key
 
 volumes:
+  chronograf: {}
+  influxdb: {}
   pgdata: {}
