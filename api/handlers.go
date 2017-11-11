@@ -138,13 +138,30 @@ func HandleVehicles(vd logic.VehicleDataset) http.HandlerFunc {
 	}
 }
 
-// // HandleGTFS ...
-// func HandleGTFS() http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
+// HandleGTFSVehicles provides responses for the /api/v2/vehicles endpoint.
+// It returns a list of vehicles pulled from a local DB populated from a GTFS feed.
+func HandleGTFSVehicles(vd logic.VehicleDataset) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		ids, err := commaSplitInts(r.URL.Query().Get("ids"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error parsing ids: %v", err), http.StatusBadRequest)
+			return
+		}
 
-// 		if err := trimet.RequestGTFS(); err != nil {
-// 			log.Println("Error:", err)
-// 		}
+		vehicles, err := vd.FetchGTFSByIDs(ids)
+		if err != nil {
+			httpError(w, "HandleGTFSVehicles:", err, http.StatusInternalServerError)
+			return
+		}
 
-// 	}
-// }
+		w.Header().Set("Content-Type", "application/json")
+		b, err := json.Marshal(vehicles)
+		if err != nil {
+			httpError(w, "HandleGTFSVehicles:", err, http.StatusInternalServerError)
+			return
+		}
+		w.Write(b)
+
+	}
+}

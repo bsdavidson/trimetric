@@ -142,33 +142,25 @@ export function getMockArrivalsResponse() {
 export function getMockVehiclesResponse() {
   return [
     {
-      expires: 1467954885000,
-      signMessage: "15 Montgomery Pk",
-      serviceDate: 1467874800000,
-      loadPercentage: 0,
-      latitude: 45.5163309,
-      nextStopSeq: 24,
-      type: "bus",
-      blockID: 1508,
-      signMessageLong: "15  Belmont/NW 23rd to Montgomery Park",
-      lastLocID: 7899,
-      nextLocID: 6446,
-      locationInScheduleDay: 79713,
-      newTrip: false,
-      longitude: -122.5871591,
-      direction: 0,
-      inCongestion: false,
-      routeNumber: 15,
-      bearing: 270,
-      garage: "CENTER",
-      tripID: "6484445",
-      delay: -132,
-      extraBlockID: null,
-      messageCode: 138,
-      lastStopSeq: 23,
-      vehicleID: 2629,
-      time: 1467954646616,
-      offRoute: false
+      trip: {
+        trip_id: "7753585",
+        route_id: "100"
+      },
+      vehicle: {
+        id: "2629",
+        label: "15 Montgomery Pk"
+      },
+      position: {
+        latitude: 45.5163309,
+        longitude: -122.5871591,
+        bearing: 270
+      },
+      current_stop_sequence: 9,
+      stop_id: "8355",
+      current_status: 2,
+      timestamp: 1510378074,
+      congestion_level: 0,
+      occupancy_status: 0
     }
   ];
 }
@@ -240,7 +232,7 @@ export function getMockCombinedData() {
             latitude: 0,
             longitude: 0,
             signMessage: undefined,
-            type: undefined,
+            type: "bus",
             vehicleID: null,
             bearing: undefined
           }
@@ -250,33 +242,10 @@ export function getMockCombinedData() {
     vehicles: {
       arrivals: [
         {
-          bearing: 270,
-          blockID: 1508,
-          delay: -132,
-          direction: 0,
-          expires: 1467954885000,
-          extraBlockID: null,
-          garage: "CENTER",
-          inCongestion: false,
-          lastLocID: 7899,
-          lastStopSeq: 23,
           latitude: 45.5163309,
-          loadPercentage: 0,
-          locationInScheduleDay: 79713,
           longitude: -122.5871591,
-          messageCode: 138,
-          newTrip: false,
-          nextLocID: 6446,
-          nextStopSeq: 24,
-          offRoute: false,
-          routeNumber: 15,
-          serviceDate: 1467874800000,
-          signMessage: "15 Montgomery Pk",
-          signMessageLong: "15  Belmont/NW 23rd to Montgomery Park",
-          time: 1467954646616,
-          tripID: "6484445",
           type: "bus",
-          vehicleID: 2629
+          vehicleID: "2629"
         }
       ]
     }

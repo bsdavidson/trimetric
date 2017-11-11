@@ -77,14 +77,14 @@ func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db
 
 	go func() {
 		defer wg.Done()
-		if err := logic.ProduceVehicles(ctx, strings.TrimSpace(apiKey)); err != nil {
+		if err := logic.ProduceGTFSVehicles(ctx, strings.TrimSpace(apiKey)); err != nil {
 			log.Println(err)
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
-		if err := logic.ConsumeVehicles(ctx, vds); err != nil {
+		if err := logic.ConsumeGTFSVehicles(ctx, vds); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -98,6 +98,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db
 	http.HandleFunc("/api/v1/vehicles", api.HandleVehicles(vds))
 	http.HandleFunc("/api/v1/arrivals", api.HandleArrivals(apiKey))
 	http.HandleFunc("/api/v1/stops", api.HandleStops(sds))
+	http.HandleFunc("/api/v2/vehicles", api.HandleGTFSVehicles(vds))
 	http.Handle("/", http.FileServer(http.Dir(webPath)))
 	log.Printf("Serving requests on %s", addr)
 

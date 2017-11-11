@@ -13,7 +13,8 @@ const UPDATE_TIMEOUT = 1000;
 const API_ENDPOINTS = {
   stops: "/api/v1/stops",
   arrivals: "/api/v1/arrivals",
-  vehicles: "/api/v1/vehicles"
+  vehicles: "/api/v1/vehicles",
+  vehiclesGTFS: "/api/v2/vehicles"
 };
 
 export class Trimet {
@@ -27,7 +28,10 @@ export class Trimet {
       stops: null
     };
     this.fetchStopsID = 0;
-    this.routesCache = {dir0: {}, dir1: {}};
+    this.routesCache = {
+      dir0: {},
+      dir1: {}
+    };
     this.store = store;
     this.fetch = _fetch;
     this.running = false;
@@ -57,7 +61,10 @@ export class Trimet {
       .then(data => {
         if (id === this.fetchStopsID) {
           this.stopsCache = {
-            location: {lat: lat, lng: lng},
+            location: {
+              lat: lat,
+              lng: lng
+            },
             stops: data.stops
           };
         }
@@ -102,7 +109,7 @@ export class Trimet {
     if (!fetchAll) {
       params.ids = vehicles;
     }
-    let vehiclesAPIURL = API_ENDPOINTS.vehicles + "?" + buildQuery(params);
+    let vehiclesAPIURL = API_ENDPOINTS.vehiclesGTFS + "?" + buildQuery(params);
     return this.fetch(vehiclesAPIURL).then(response => response.json());
   }
 
@@ -117,8 +124,14 @@ export class Trimet {
         arrivals = a;
         return this.fetchVehicles(a, true);
       })
-      .then(vehicles => ({stops, arrivals, vehicles}))
-      .then(data => combineResponses(data.stops, data.arrivals, data.vehicles));
+      .then(vehicles => ({
+        stops,
+        arrivals,
+        vehicles
+      }))
+      .then(data => {
+        return combineResponses(data.stops, data.arrivals, data.vehicles);
+      });
   }
 
   start() {
@@ -149,7 +162,7 @@ export class Trimet {
         );
         let lc = this.store.getState().locationClicked;
         if (lc) {
-          data.vehicles.forEach(v => {
+          data.vehicles.arrivals.forEach(v => {
             if (lc.id !== v.vehicleID) {
               return;
             }
@@ -187,6 +200,7 @@ export function combineResponses(stops, arrivals, vehicles) {
   if (!vehicles) {
     throw new Error("vehicles argument cannot be undefined");
   }
+
   let newStops = stops.map(stop => {
     let newStop = {
       lng: stop.lon,
@@ -197,27 +211,30 @@ export function combineResponses(stops, arrivals, vehicles) {
     newStop.arrivals = arrivals.resultSet.arrival
       .filter(a => +a.locid === +newStop.locid && a.feet)
       .map(arrival => {
-        let vehicle = vehicles.find(v => +v.vehicleID == +arrival.vehicleID);
+        let vehicle = vehicles.find(v => +v.vehicle.id === +arrival.vehicleID);
         if (!vehicle) {
           vehicle = {
-            latitude: 0,
-            longitude: 0
+            position: {
+              latitude: 0,
+              longitude: 0
+            },
+            vehicle: {},
+            trip: {}
           };
         }
-
         return {
-          bearing: vehicle.bearing,
+          bearing: vehicle.position.bearing,
           estimated: arrival.estimated,
           feet: arrival.feet,
           id: arrival.id,
-          latitude: vehicle.latitude,
-          longitude: vehicle.longitude,
+          latitude: vehicle.position.latitude,
+          longitude: vehicle.position.longitude,
           route: arrival.route,
           scheduled: arrival.scheduled,
           shortSign: arrival.shortSign,
-          signMessage: vehicle.signMessage,
+          signMessage: vehicle.vehicle.label,
           status: arrival.status,
-          type: vehicle.type,
+          type: "bus",
           vehicleID: arrival.vehicleID
         };
       });
@@ -227,7 +244,14 @@ export function combineResponses(stops, arrivals, vehicles) {
     queryTime: moment(arrivals.resultSet.queryTime).valueOf(),
     stops: newStops,
     vehicles: {
-      arrivals: vehicles
+      arrivals: vehicles.map(v => {
+        return {
+          latitude: v.position.latitude,
+          longitude: v.position.longitude,
+          vehicleID: v.vehicle.id,
+          type: "bus"
+        };
+      })
     }
   };
 }
