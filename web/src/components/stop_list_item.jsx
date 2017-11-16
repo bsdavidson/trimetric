@@ -1,8 +1,8 @@
 import React from "react";
-import PropTypes from "prop-types";
 import {connect} from "react-redux";
 import {Link, withRouter} from "react-router-dom";
 
+import {TrimetricPropTypes} from "./prop_types";
 import {formatDistance} from "../helpers/directions";
 import {humanTimeUntilEpoch} from "../helpers/times";
 
@@ -46,22 +46,8 @@ export class StopListItem extends React.Component {
 }
 
 StopListItem.propTypes = {
-  location: PropTypes.shape({
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired
-  }).isRequired,
-  stop: PropTypes.shape({
-    arrivals: PropTypes.arrayOf(
-      PropTypes.shape({
-        estimated: PropTypes.number.isRequired,
-        route_id: PropTypes.string.isRequired
-      })
-    ).isRequired,
-    name: PropTypes.string.isRequired,
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired,
-    id: PropTypes.string.isRequired
-  }).isRequired
+  location: TrimetricPropTypes.location,
+  stop: TrimetricPropTypes.stop
 };
 
 function mapStateToProps(state) {

@@ -2,6 +2,8 @@ import deepEqual from "deep-equal";
 import React from "react";
 import PropTypes from "prop-types";
 
+import {TrimetricPropTypes} from "./prop_types";
+
 /** @augments {React.Component<any, any>} */
 class Marker extends React.Component {
   constructor(props) {
@@ -53,8 +55,8 @@ class Marker extends React.Component {
 }
 
 Marker.propTypes = {
-  google: PropTypes.object,
-  map: PropTypes.object,
+  google: TrimetricPropTypes.google,
+  map: TrimetricPropTypes.map,
   opts: PropTypes.shape({
     position: PropTypes.object.isRequired
   }).isRequired

@@ -1,8 +1,9 @@
 import {createStore, combineReducers} from "redux";
 
 import {
+  LocationTypes,
   UPDATE_DATA,
-  UPDATE_BBOX,
+  UPDATE_BOUNDING_BOX,
   UPDATE_HOME_LOCATION,
   UPDATE_LOCATION
 } from "./actions";
@@ -10,7 +11,8 @@ import {
 const DEFAULT_LOCATION = {
   lat: 45.522236,
   lng: -122.675827,
-  gps: false
+  gps: false,
+  locationType: LocationTypes.HOME
 };
 
 const DEFAULT_BOUNDING_BOX = {
@@ -40,7 +42,7 @@ function locationClicked(state = null, action) {
 
 function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
   switch (action.type) {
-    case UPDATE_BBOX:
+    case UPDATE_BOUNDING_BOX:
       return action.boundingBox;
     default:
       return state;

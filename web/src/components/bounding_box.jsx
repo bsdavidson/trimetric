@@ -1,6 +1,6 @@
 import React from "react";
 import {connect} from "react-redux";
-import PropTypes from "prop-types";
+import {TrimetricPropTypes} from "./prop_types";
 
 import {updateBoundingBox} from "../actions";
 
@@ -57,8 +57,8 @@ class BoundingBox extends React.Component {
 }
 
 BoundingBox.propTypes = {
-  google: PropTypes.object,
-  map: PropTypes.object
+  google: TrimetricPropTypes.google,
+  map: TrimetricPropTypes.map
 };
 
 function mapDispatchToProps(dispatch) {

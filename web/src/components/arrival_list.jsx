@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import {hashHistory, withRouter, Link} from "react-router-dom";
 import {connect} from "react-redux";
 
+import {TrimetricPropTypes} from "./prop_types";
 import ArrivalListItem from "./arrival_list_item";
 import {updateLocation, LocationTypes} from "../actions";
 import {buildQuery} from "../helpers/http";
@@ -72,24 +73,10 @@ export class ArrivalList extends React.Component {
 }
 
 ArrivalList.propTypes = {
-  google: PropTypes.object,
-  location: PropTypes.shape({
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired
-  }),
+  google: TrimetricPropTypes.google,
+  location: TrimetricPropTypes.location,
   onRouteNameClick: PropTypes.func.isRequired,
-  stop: PropTypes.shape({
-    arrivals: PropTypes.arrayOf(
-      PropTypes.shape({
-        estimated: PropTypes.number.isRequired,
-        route_id: PropTypes.string.isRequired
-      })
-    ).isRequired,
-    name: PropTypes.string.isRequired,
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired,
-    id: PropTypes.string.isRequired
-  }).isRequired
+  stop: TrimetricPropTypes.stop
 };
 
 function mapDispatchToProps(dispatch) {

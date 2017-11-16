@@ -1,8 +1,8 @@
 import React from "react";
-import PropTypes from "prop-types";
 import {withRouter} from "react-router-dom";
 import {connect} from "react-redux";
 
+import {TrimetricPropTypes} from "./prop_types";
 import {degreeToCompass} from "../helpers/directions";
 import {updateLocation, LocationTypes} from "../actions";
 
@@ -70,20 +70,10 @@ export class ArrivalListItem extends React.Component {
 }
 
 ArrivalListItem.propTypes = {
-  arrival: PropTypes.shape({
-    vehicle_position: PropTypes.shape({
-      lat: PropTypes.number.isRequired,
-      lng: PropTypes.number.isRequired,
-      bearing: PropTypes.number
-    }).isRequired,
-    feet: PropTypes.number.isRequired,
-    route_id: PropTypes.string.isRequired,
-    headsign: PropTypes.string.isRequired,
-    vehicle_id: PropTypes.string
-  }).isRequired,
-  arrivalTime: PropTypes.string.isRequired,
-  location: PropTypes.object,
-  locationClicked: PropTypes.object
+  arrival: TrimetricPropTypes.arrival,
+  arrivalTime: TrimetricPropTypes.arrivalTime,
+  location: TrimetricPropTypes.location,
+  locationClicked: TrimetricPropTypes.locationClicked
 };
 
 function mapDispatchToProps(dispatch) {

@@ -1,8 +1,8 @@
 import React from "react";
 import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
-import PropTypes from "prop-types";
 
+import {TrimetricPropTypes} from "./prop_types";
 import {getVehicleType} from "../data";
 import Marker from "./marker";
 
@@ -47,21 +47,9 @@ export class VehicleMarkers extends React.Component {
 }
 
 VehicleMarkers.propTypes = {
-  google: PropTypes.object,
-  map: PropTypes.object,
-  vehicles: PropTypes.arrayOf(
-    PropTypes.shape({
-      position: PropTypes.shape({
-        lat: PropTypes.number.isRequired,
-        lng: PropTypes.number.isRequired
-      }),
-      vehicle: PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        label: PropTypes.string
-      }),
-      route_type: PropTypes.number.isRequired
-    })
-  ).isRequired
+  google: TrimetricPropTypes.google,
+  map: TrimetricPropTypes.map,
+  vehicles: TrimetricPropTypes.vehiclePositions
 };
 
 function mapStateToProps(state) {

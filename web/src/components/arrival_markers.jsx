@@ -1,8 +1,8 @@
 import React from "react";
 import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
-import PropTypes from "prop-types";
 
+import {TrimetricPropTypes} from "./prop_types";
 import {getVehicleType} from "../data";
 import Marker from "./marker";
 
@@ -66,30 +66,9 @@ export class ArrivalMarkers extends React.Component {
 }
 
 ArrivalMarkers.propTypes = {
-  google: PropTypes.object,
-  map: PropTypes.object,
-  stop: PropTypes.shape({
-    arrivals: PropTypes.arrayOf(
-      PropTypes.shape({
-        vehiclePosition: PropTypes.shape({
-          vehicle: PropTypes.shape({
-            id: PropTypes.string.isRequired
-          }),
-          position: PropTypes.shape({
-            latitude: PropTypes.number.isRequired,
-            longitude: PropTypes.number.isRequired
-          })
-        })
-      })
-    ).isRequired,
-    // FIXME: these should be required, but is optional because this component
-    // is being passed the vehicles object as well as a stop, and the vehicles
-    // object doesn't have an id.
-    id: PropTypes.string,
-    lat: PropTypes.number,
-    lng: PropTypes.number,
-    desc: PropTypes.string
-  }).isRequired
+  google: TrimetricPropTypes.google,
+  map: TrimetricPropTypes.map,
+  stop: TrimetricPropTypes.stop
 };
 
 function mapStateToProps(state) {

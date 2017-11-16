@@ -196,13 +196,13 @@ export class Trimet {
 
 export function combineResponses(stops, arrivals, vehicles) {
   if (!stops) {
-    throw new Error("stops argument cannot be undefined");
+    stops = [];
   }
   if (!arrivals) {
-    throw new Error("arrivals argument cannot be undefined");
+    arrivals = [];
   }
   if (!vehicles) {
-    throw new Error("vehicles argument cannot be undefined");
+    vehicles = [];
   }
 
   let newStops = stops.map(stop => {
