@@ -46,7 +46,7 @@ export class ArrivalList extends React.Component {
         <h3
           className="arrival-list-description"
           onClick={this.handleRouteNameClick}>
-          {this.props.stop.desc}
+          {this.props.stop.name}
           <span
             className="arrival-list-directions"
             onClick={this.handleDirectionsClick}>
@@ -59,7 +59,7 @@ export class ArrivalList extends React.Component {
               <ArrivalListItem
                 arrival={a}
                 arrivalTime={formatEstimate(a.estimated)}
-                color={colorMap.getColorForKey(a.route)}
+                color={colorMap.getColorForKey(a.route_id)}
                 google={this.props.google}
                 key={idx}
               />
@@ -82,13 +82,13 @@ ArrivalList.propTypes = {
     arrivals: PropTypes.arrayOf(
       PropTypes.shape({
         estimated: PropTypes.number.isRequired,
-        route: PropTypes.number.isRequired
+        route_id: PropTypes.string.isRequired
       })
     ).isRequired,
-    desc: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
     lat: PropTypes.number.isRequired,
     lng: PropTypes.number.isRequired,
-    locid: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired
 };
 
@@ -96,13 +96,7 @@ function mapDispatchToProps(dispatch) {
   return {
     onRouteNameClick: stop => {
       dispatch(
-        updateLocation(
-          LocationTypes.STOP,
-          stop.locid,
-          stop.lat,
-          stop.lng,
-          false
-        )
+        updateLocation(LocationTypes.STOP, stop.id, stop.lat, stop.lng, false)
       );
     }
   };

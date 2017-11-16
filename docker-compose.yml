@@ -13,6 +13,7 @@ services:
       - "-build=go build -o /go/bin/trimetric github.com/bsdavidson/trimetric/cmd/trimetric"
       - "-command=/go/bin/trimetric --migrate=true"
     depends_on:
+      - influxdb
       - kafka
       - postgres
       - redis
@@ -40,6 +41,8 @@ services:
     image: influxdb:alpine
     environment:
       INFLUXDB_DB: trimetric
+      INFLUXDB_USER: trimetric
+      INFLUXDB_USER_PASSWORD: example
     ports:
       - "8086:8086"
     volumes:
@@ -62,6 +65,8 @@ services:
     image: mdillon/postgis
     environment:
       POSTGRES_PASSWORD: example
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 

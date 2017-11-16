@@ -1,0 +1,4 @@
+url,trip_updates,alerts,vehicle_positions
+http://developer.trimet.org/ws/V1/TripUpdate/,1,0,0
+http://developer.trimet.org/ws/V1/FeedSpecAlerts/,0,1,0
+http://developer.trimet.org/ws/gtfs/VehiclePositions,0,0,1

@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // RequestArrivals makes a request to the trimet arrivals API endpoint.
@@ -25,12 +27,12 @@ func RequestArrivals(apiKey string, ids []int) ([]byte, error) {
 
 	resp, err := http.Get(fmt.Sprintf("%s?%s", Arrivals, query.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("trimet.RequestArrivals: %s", err)
+		return nil, errors.WithStack(err)
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("trimet.RequestArrivals: %s", err)
+		return nil, errors.WithStack(err)
 	}
 
 	return b, nil

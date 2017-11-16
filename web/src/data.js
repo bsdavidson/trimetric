@@ -13,9 +13,19 @@ const UPDATE_TIMEOUT = 1000;
 const API_ENDPOINTS = {
   stops: "/api/v1/stops",
   arrivals: "/api/v1/arrivals",
-  vehicles: "/api/v1/vehicles",
-  vehiclesGTFS: "/api/v2/vehicles"
+  vehiclesGTFS: "/api/v1/vehicles"
 };
+
+const VEHICLE_TYPES = {
+  0: "tram",
+  1: "subway",
+  2: "rail",
+  3: "bus"
+};
+
+export function getVehicleType(routeType) {
+  return VEHICLE_TYPES[routeType] || "bus";
+}
 
 export class Trimet {
   constructor(store, _fetch = fetch) {
@@ -23,7 +33,13 @@ export class Trimet {
     this.stopsCache = {
       location: {
         lat: null,
-        lng: null
+        lng: null,
+        bbox: {
+          south: null,
+          north: null,
+          east: null,
+          west: null
+        }
       },
       stops: null
     };
@@ -38,12 +54,14 @@ export class Trimet {
     this.timeoutID = null;
   }
 
-  fetchStops(lat, lng) {
+  fetchStops(lat, lng, bbox) {
     this.fetchStopsID++;
     let id = this.fetchStopsID;
+
     if (
       this.stopsCache.location.lat === lat &&
-      this.stopsCache.location.lng === lng
+      this.stopsCache.location.lng === lng &&
+      (bbox && this.stopsCache.location.bbox.south === bbox.south)
     ) {
       return Promise.resolve(this.stopsCache.stops);
     }
@@ -54,7 +72,11 @@ export class Trimet {
       buildQuery({
         lat: lat,
         lng: lng,
-        distance: 200
+        distance: 200,
+        south: bbox.south,
+        west: bbox.west,
+        north: bbox.north,
+        east: bbox.east
       });
     return this.fetch(stopsAPIURL)
       .then(response => response.json())
@@ -63,7 +85,8 @@ export class Trimet {
           this.stopsCache = {
             location: {
               lat: lat,
-              lng: lng
+              lng: lng,
+              bbox: bbox
             },
             stops: data.stops
           };
@@ -78,11 +101,6 @@ export class Trimet {
       throw new Error("no stops");
     }
     let locations = stops.map(location => +location.id);
-    // Trimet limits locations in arrivals API to 10
-
-    if (locations.length > 8) {
-      locations.length = 8;
-    }
 
     let arrivalsAPIURL =
       API_ENDPOINTS.arrivals +
@@ -93,36 +111,22 @@ export class Trimet {
     return this.fetch(arrivalsAPIURL).then(response => response.json());
   }
 
-  fetchVehicles(arrivals, fetchAll = false) {
-    let params = {};
-    let vehicles = arrivals.resultSet.arrival
-      .map(arrival => arrival.vehicleID)
-      .filter(v => {
-        if (v) {
-          return v;
-        }
-      });
-    if (!vehicles.length) {
-      return [];
-    }
-
-    if (!fetchAll) {
-      params.ids = vehicles;
-    }
-    let vehiclesAPIURL = API_ENDPOINTS.vehiclesGTFS + "?" + buildQuery(params);
-    return this.fetch(vehiclesAPIURL).then(response => response.json());
+  fetchVehicles() {
+    return this.fetch(API_ENDPOINTS.vehiclesGTFS).then(response =>
+      response.json()
+    );
   }
 
-  fetchData(lat, lng) {
+  fetchData(lat, lng, bbox) {
     let stops, arrivals;
-    return this.fetchStops(lat, lng)
+    return this.fetchStops(lat, lng, bbox)
       .then(s => {
         stops = s;
         return this.fetchArrivals(s);
       })
       .then(a => {
         arrivals = a;
-        return this.fetchVehicles(a, true);
+        return this.fetchVehicles();
       })
       .then(vehicles => ({
         stops,
@@ -153,8 +157,8 @@ export class Trimet {
 
   update() {
     let {lat, lng} = this.store.getState().location;
-
-    let newData = this.fetchData(lat, lng);
+    let bbox = this.store.getState().boundingBox;
+    let newData = this.fetchData(lat, lng, bbox);
     newData
       .then(data => {
         this.store.dispatch(
@@ -162,19 +166,19 @@ export class Trimet {
         );
         let lc = this.store.getState().locationClicked;
         if (lc) {
-          data.vehicles.arrivals.forEach(v => {
-            if (lc.id !== v.vehicleID) {
+          data.vehicles.forEach(v => {
+            if (lc.id !== v.vehicle.id) {
               return;
             }
-            if (lc.lat === v.latitude && lc.lng === v.longitude) {
+            if (lc.lat === v.position.lat && lc.lng === v.position.lng) {
               return;
             }
             this.store.dispatch(
               updateLocation(
                 lc.locationType,
                 lc.id,
-                v.latitude,
-                v.longitude,
+                v.position.lat,
+                v.position.lng,
                 lc.following
               )
             );
@@ -202,56 +206,22 @@ export function combineResponses(stops, arrivals, vehicles) {
   }
 
   let newStops = stops.map(stop => {
-    let newStop = {
-      lng: stop.lon,
-      lat: stop.lat,
-      locid: parseInt(stop.id, 10),
-      desc: stop.name
-    };
-    newStop.arrivals = arrivals.resultSet.arrival
-      .filter(a => +a.locid === +newStop.locid && a.feet)
+    let newStop = Object.assign({}, stop);
+    newStop.arrivals = arrivals
+      .filter(a => a.stop_id === newStop.id) // && a.feet)
       .map(arrival => {
-        let vehicle = vehicles.find(v => +v.vehicle.id === +arrival.vehicleID);
-        if (!vehicle) {
-          vehicle = {
-            position: {
-              latitude: 0,
-              longitude: 0
-            },
-            vehicle: {},
-            trip: {}
-          };
-        }
-        return {
-          bearing: vehicle.position.bearing,
-          estimated: arrival.estimated,
-          feet: arrival.feet,
-          id: arrival.id,
-          latitude: vehicle.position.latitude,
-          longitude: vehicle.position.longitude,
-          route: arrival.route,
-          scheduled: arrival.scheduled,
-          shortSign: arrival.shortSign,
-          signMessage: vehicle.vehicle.label,
-          status: arrival.status,
-          type: "bus",
-          vehicleID: arrival.vehicleID
-        };
+        return Object.assign({}, arrival, {
+          estimated: moment(arrival.date, "YYYY-MM-DD")
+            .add(moment.duration(arrival.arrival_time))
+            .valueOf(),
+          feet: 123
+        });
       });
     return newStop;
   });
   return {
-    queryTime: moment(arrivals.resultSet.queryTime).valueOf(),
+    queryTime: moment().valueOf(),
     stops: newStops,
-    vehicles: {
-      arrivals: vehicles.map(v => {
-        return {
-          latitude: v.position.latitude,
-          longitude: v.position.longitude,
-          vehicleID: v.vehicle.id,
-          type: "bus"
-        };
-      })
-    }
+    vehicles: vehicles
   };
 }

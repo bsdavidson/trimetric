@@ -1,4 +1,5 @@
 export const UPDATE_DATA = "UPDATE_DATA";
+export const UPDATE_BOUNDING_BOX = "UPDATE_BOUNDING_BOX";
 export const UPDATE_LOCATION = "UPDATE_LOCATION";
 export const UPDATE_HOME_LOCATION = "UPDATE_HOME_LOCATION";
 
@@ -25,6 +26,13 @@ export function updateHomeLocation(lat, lng, gps = true) {
       lng: lng,
       gps: gps
     }
+  };
+}
+
+export function updateBoundingBox(bbox) {
+  return {
+    type: UPDATE_BOUNDING_BOX,
+    boundingBox: bbox
   };
 }
 

@@ -3,12 +3,8 @@ import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
 import PropTypes from "prop-types";
 
+import {getVehicleType} from "../data";
 import Marker from "./marker";
-
-const VEHICLE_ICON_MAP = {
-  bus: "bus",
-  rail: "tram"
-};
 
 export class ArrivalMarkers extends React.Component {
   constructor(props) {
@@ -22,23 +18,23 @@ export class ArrivalMarkers extends React.Component {
         lat: stop.lat,
         lng: stop.lng
       },
-      name: stop.desc,
+      name: stop.name,
       animation: this.props.google.maps.Animation.DROP
     };
   }
 
-  getVehicleOpts(arrival) {
+  getArrivalOpts(arrival) {
     return {
       position: {
-        lat: arrival.latitude,
-        lng: arrival.longitude
+        lat: arrival.vehicle_position.lat,
+        lng: arrival.vehicle_position.lng
       },
       icon: {
-        url: `./assets/${VEHICLE_ICON_MAP[arrival.type]}.png`,
+        url: `./assets/${getVehicleType(arrival.route_type)}.png`,
         scaledSize: new this.props.google.maps.Size(25, 25)
       },
       opacity: 0.8,
-      title: arrival.shortSign
+      title: arrival.headsign
     };
   }
 
@@ -47,13 +43,13 @@ export class ArrivalMarkers extends React.Component {
     if (!stop || !stop.arrivals || !google || !map) {
       return null;
     }
-    this.markers = stop.arrivals.map(a => {
+    this.markers = stop.arrivals.filter(a => a.vehicle_id).map(a => {
       return (
         <Marker
-          key={a.vehicleID}
+          key={a.vehicle_id}
           google={google}
           map={map}
-          opts={this.getVehicleOpts(a)}
+          opts={this.getArrivalOpts(a)}
         />
       );
     });
@@ -75,14 +71,15 @@ ArrivalMarkers.propTypes = {
   stop: PropTypes.shape({
     arrivals: PropTypes.arrayOf(
       PropTypes.shape({
-        latitude: PropTypes.number.isRequired,
-        longitude: PropTypes.number.isRequired,
-        // FIXME: this is either a string or number depending on where it is
-        // used. It should really be only one of these.
-        vehicleID: PropTypes.oneOfType([
-          PropTypes.number.isRequired,
-          PropTypes.string.isRequired
-        ])
+        vehiclePosition: PropTypes.shape({
+          vehicle: PropTypes.shape({
+            id: PropTypes.string.isRequired
+          }),
+          position: PropTypes.shape({
+            latitude: PropTypes.number.isRequired,
+            longitude: PropTypes.number.isRequired
+          })
+        })
       })
     ).isRequired,
     // FIXME: these should be required, but is optional because this component

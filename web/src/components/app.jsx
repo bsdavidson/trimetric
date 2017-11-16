@@ -6,9 +6,11 @@ import ReactCSSTransitionGroup from "react-addons-css-transition-group";
 
 import ArrivalList from "./arrival_list";
 import ArrivalMarkers from "./arrival_markers";
+import VehicleMarkers from "./vehicle_markers";
 import {Map} from "./map";
 import Marker from "./marker";
 import PanTo from "./pan_to";
+import BoundingBox from "./bounding_box";
 import StopList from "./stop_list";
 
 class App extends Component {
@@ -35,10 +37,9 @@ class App extends Component {
     if (this.props.match && this.props.match.params) {
       stopID = this.props.match.params.stopID;
     }
-    let stop = stops.find(s => s.locid == stopID);
+    let stop = stops.find(s => s.id == stopID);
     let page;
     let markers = [];
-
     if (stop) {
       if (stop.arrivals) {
         markers.push(<ArrivalMarkers key="arrivals" stop={stop} />);
@@ -46,15 +47,13 @@ class App extends Component {
       page = <ArrivalList key="arrivalPage" stop={stop} />;
     } else {
       page = <StopList key="stopPage" stops={stops} />;
-      if (vehicles.arrivals) {
-        markers.push(<ArrivalMarkers key="allTrimet" stop={vehicles} />);
-      }
+      markers.push(<VehicleMarkers key="allTrimet" vehicles={vehicles} />);
     }
 
     if (this.state.google) {
       let opts = {
         position: location,
-        title: "WeWork",
+        title: "Downtown",
         animation: this.state.google.maps.Animation.DROP
       };
       markers.push(<Marker key="home" opts={opts} />);
@@ -73,6 +72,7 @@ class App extends Component {
           opts={{zoom: 16, center: location}}>
           {markers}
           <PanTo location={locationClicked} />
+          <BoundingBox location={locationClicked} />
         </Map>
         <ReactCSSTransitionGroup
           component="div"

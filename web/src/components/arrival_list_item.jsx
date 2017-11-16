@@ -15,7 +15,7 @@ export class ArrivalListItem extends React.Component {
   componentWillUnmount() {
     if (
       this.props.locationClicked &&
-      this.props.arrival.vehicleID === this.props.locationClicked.id
+      this.props.arrival.vehicle_id === this.props.locationClicked.id
     ) {
       this.props.clearLocation(this.props.location);
     }
@@ -25,6 +25,7 @@ export class ArrivalListItem extends React.Component {
     if (window) {
       window.scrollTo(0, 0);
     }
+
     this.props.onVehicleClick(LocationTypes.VEHICLE, this.props.arrival);
   }
 
@@ -33,7 +34,7 @@ export class ArrivalListItem extends React.Component {
     if (
       this.props.locationClicked &&
       this.props.locationClicked.following &&
-      this.props.locationClicked.id === this.props.arrival.vehicleID
+      this.props.locationClicked.id === this.props.arrival.vehicle_id
     ) {
       routeClass = "active";
     }
@@ -42,30 +43,25 @@ export class ArrivalListItem extends React.Component {
       backgroundColor: this.props.color
     };
 
-    let vehicleDistance;
-    if (this.props.arrival.feet > 500) {
-      vehicleDistance =
-        Math.round(this.props.arrival.feet / 5280 * 100) / 100 + " miles away";
-    } else {
-      vehicleDistance = this.props.arrival.feet + " feet away";
-    }
     return (
       <div
         className={"arrival-list-item " + routeClass}
         onClick={this.handleVehicleClick}>
         <div className="arrival-id" style={routeStyle}>
-          {this.props.arrival.route}
+          {this.props.arrival.route_id}
         </div>
-        <div className="arrival-name">{this.props.arrival.shortSign}</div>
+        <div className="arrival-name">{this.props.arrival.headsign}</div>
         <div className="arrival-metrics">
           <div className="arrival-metric arrival-bus-distance">
-            {vehicleDistance}
+            {this.props.arrival.vehicle_position.lat},{" "}
+            {this.props.arrival.vehicle_position.lng}
           </div>
           <div className="arrival-metric arrival-est-time">
-            {this.props.arrivalTime}
+            {this.props.arrival.vehicle_id} - {this.props.arrivalTime}
           </div>
           <div className="arrival-metric arrival-direction">
-            Traveling: {degreeToCompass(this.props.arrival.bearing)}
+            Traveling:{" "}
+            {degreeToCompass(this.props.arrival.vehicle_position.bearing)}
           </div>
         </div>
       </div>
@@ -75,13 +71,15 @@ export class ArrivalListItem extends React.Component {
 
 ArrivalListItem.propTypes = {
   arrival: PropTypes.shape({
-    bearing: PropTypes.number,
+    vehicle_position: PropTypes.shape({
+      lat: PropTypes.number.isRequired,
+      lng: PropTypes.number.isRequired,
+      bearing: PropTypes.number
+    }).isRequired,
     feet: PropTypes.number.isRequired,
-    latitude: PropTypes.number.isRequired,
-    longitude: PropTypes.number.isRequired,
-    route: PropTypes.number.isRequired,
-    shortSign: PropTypes.string.isRequired,
-    vehicleID: PropTypes.string
+    route_id: PropTypes.string.isRequired,
+    headsign: PropTypes.string.isRequired,
+    vehicle_id: PropTypes.string
   }).isRequired,
   arrivalTime: PropTypes.string.isRequired,
   location: PropTypes.object,
@@ -94,9 +92,9 @@ function mapDispatchToProps(dispatch) {
       dispatch(
         updateLocation(
           type,
-          arrival.vehicleID,
-          arrival.latitude,
-          arrival.longitude,
+          arrival.vehicle_id,
+          arrival.vehicle_position.lat,
+          arrival.vehicle_position.lng,
           true
         )
       );
@@ -118,7 +116,8 @@ function mapDispatchToProps(dispatch) {
 function mapStateToProps(state) {
   return {
     location: state.location,
-    locationClicked: state.locationClicked
+    locationClicked: state.locationClicked,
+    vehicles: state.vehicles
   };
 }
 

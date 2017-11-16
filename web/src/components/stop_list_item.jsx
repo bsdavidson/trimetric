@@ -17,18 +17,18 @@ export class StopListItem extends React.Component {
       longitude: this.props.stop.lng
     };
     let arrivalInfo = {
-      route: this.props.stop.arrivals[0].route,
+      route: this.props.stop.arrivals[0].route_id,
       estimated: humanTimeUntilEpoch(this.props.stop.arrivals[0].estimated)
     };
     return (
-      <Link className="stop-link" to={`/stop/${this.props.stop.locid}`}>
+      <Link className="stop-link" to={`/stop/${this.props.stop.id}`}>
         <div className="stop-list-item">
           <div className="stop-arrow">
             <span className="fui-arrow-right" />
           </div>
           <h4 className="stop-description">
-            {this.props.stop.desc} - #<span className="stop-id">
-              {this.props.stop.locid}
+            {this.props.stop.name} - #<span className="stop-id">
+              {this.props.stop.id}
             </span>
           </h4>
           <p className="stop-metrics">
@@ -36,7 +36,7 @@ export class StopListItem extends React.Component {
               {formatDistance(this.props.location, location)}
             </span>{" "}
             feet away.
-            <span className="stop-route"> {arrivalInfo.route} arrives </span>
+            <span className="stop-route"> {arrivalInfo.route_id} arrives </span>
             <span className="stop-estimate">{arrivalInfo.estimated} </span>
           </p>
         </div>
@@ -54,13 +54,13 @@ StopListItem.propTypes = {
     arrivals: PropTypes.arrayOf(
       PropTypes.shape({
         estimated: PropTypes.number.isRequired,
-        route: PropTypes.number.isRequired
+        route_id: PropTypes.string.isRequired
       })
     ).isRequired,
-    desc: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
     lat: PropTypes.number.isRequired,
     lng: PropTypes.number.isRequired,
-    locid: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired
 };
 

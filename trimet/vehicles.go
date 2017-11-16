@@ -1,7 +1,6 @@
 package trimet
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,82 +9,54 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/gtfs-realtime-bindings/golang/gtfs"
+	"github.com/pkg/errors"
 )
 
-// Trimet API Routes
+// RouteType indicates the type of vehicle serving the route
+type RouteType int
+
 const (
-	Stops        = "https://developer.trimet.org/ws/V1/stops"
-	Arrivals     = "https://developer.trimet.org/ws/v2/arrivals"
-	Vehicles     = "https://developer.trimet.org/ws/v2/vehicles"
-	VehiclesGTFS = "http://developer.trimet.org/ws/gtfs/VehiclePositions"
-	Routes       = "https://developer.trimet.org/ws/V1/routeConfig"
+	RouteTypeTram RouteType = iota
+	RouteTypeSubway
+	RouteTypeRail
+	RouteTypeBus
+	RouteTypeFerry
+	RouteTypeCableCar
+	RouteTypeGondola
+	RouteTypeFunicular
 )
 
-// VehicleResponse is the top level of a Trimet API vehicle response
-type VehicleResponse struct {
-	ResultSet VehicleResultSet `json:"resultSet"`
-}
-
-// VehicleResultSet is the inner wrapper of a Trimet API vehicle response.
-type VehicleResultSet struct {
-	QueryTime int64         `json:"queryTime"`
-	Vehicles  []VehicleData `json:"vehicle"`
-}
-
-// VehicleData is a single vehicle in a vehicle response
-type VehicleData struct {
-	VehicleID int    `json:"vehicleID"`
-	Data      []byte `json:"-"`
-}
-
-type vehicleDataAlias VehicleData
-
-// UnmarshalJSON sets the VehicleID and stores the rest of the data on the Data field.
-// This allows us to pass the bytes to the client for processing.
-func (t *VehicleData) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, (*vehicleDataAlias)(t)); err != nil {
-		return err
-	}
-	t.Data = make([]byte, len(b))
-	copy(t.Data, b)
-	return nil
-}
-
-// RawVehicleData represents the raw JSON data for a single vehicle.
-type RawVehicleData map[string]interface{}
-
-type GTFSVehiclePosition struct {
-	Trip                GTFSTrip                               `json:"trip"`
-	Vehicle             GTFSVehicle                            `json:"vehicle"`
-	Position            GTFSPosition                           `json:"position"`
+type VehiclePosition struct {
+	Trip                TripDescriptor                         `json:"trip"`
+	Vehicle             VehicleDescriptor                      `json:"vehicle"`
+	Position            Position                               `json:"position"`
 	CurrentStopSequence uint32                                 `json:"current_stop_sequence"`
 	StopID              string                                 `json:"stop_id"`
 	CurrentStatus       gtfs.VehiclePosition_VehicleStopStatus `json:"current_status"`
 	Timestamp           uint64                                 `json:"timestamp"`
 	CongestionLevel     gtfs.VehiclePosition_CongestionLevel   `json:"congestion_level"`
 	OccupancyStatus     gtfs.VehiclePosition_OccupancyStatus   `json:"occupancy_status"`
+	RouteType           RouteType                              `json:"route_type"`
 }
 
-type GTFSTrip struct {
-	TripID  string `json:"trip_id"`
-	RouteID string `json:"route_id"`
+// VehicleDescriptor ...
+type VehicleDescriptor struct {
+	ID    *string `json:"id"`
+	Label *string `json:"label"`
+	// LicensePlate *string `json:"license_plate"`
 }
 
-type GTFSVehicle struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-}
-
-type GTFSPosition struct {
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
+// Position ...
+type Position struct {
+	Latitude  float32 `json:"lat"`
+	Longitude float32 `json:"lng"`
 	Bearing   float32 `json:"bearing"`
 	Odometer  float64 `json:"odometer"`
 	Speed     float32 `json:"speed"`
 }
 
 // IsEqual ...
-func (pvp *GTFSVehiclePosition) IsEqual(cvp GTFSVehiclePosition) bool {
+func (pvp *VehiclePosition) IsEqual(cvp VehiclePosition) bool {
 
 	if pvp.Trip != cvp.Trip {
 		return false
@@ -108,56 +79,10 @@ func (pvp *GTFSVehiclePosition) IsEqual(cvp GTFSVehiclePosition) bool {
 	return true
 }
 
-// Scan unmarshals the raw JSON bytes stored in the DB into a map.
-func (vd *RawVehicleData) Scan(src interface{}) error {
-	b, ok := src.([]byte)
-	if !ok {
-		return fmt.Errorf("RawVehicleData.Scan: src must be []byte, got %T", src)
-	}
-	if err := json.Unmarshal(b, vd); err != nil {
-		return fmt.Errorf("RawVehicleData.Scan: %v", err)
-	}
-	return nil
-}
-
-// RawVehicle wraps raw vehicle data in a struct that contains
-// the VehicleID.
-type RawVehicle struct {
-	VehicleID int            `json:"vehicle_id"`
-	Data      RawVehicleData `json:"data"`
-}
-
-// RequestVehicles contacts the Trimet Vehicles API and retrieves all vehicles
+// RequestVehiclePositions contacts the Trimet Vehicles GTFS API and retrieves all vehicles
 // updated after the 'since' value. If no 'since' value is specified, it defaults
 // to retrieving them all since midnight of the service day.
-func RequestVehicles(appID string, since int64) (*VehicleResponse, error) {
-	query := url.Values{}
-	query.Set("appID", appID)
-	query.Set("json", "true")
-	if since > 0 {
-		query.Set("since", strconv.FormatInt(since, 10))
-	}
-	resp, err := http.Get(fmt.Sprintf("%s?%s", Vehicles, query.Encode()))
-	if err != nil {
-		return nil, fmt.Errorf("http.Get: %s", err)
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll: %s", err)
-	}
-	var tr VehicleResponse
-	err = json.Unmarshal(b, &tr)
-	if err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %s", err)
-	}
-	return &tr, nil
-}
-
-// RequestGTFSVehicles contacts the Trimet Vehicles GTFS API and retrieves all vehicles
-// updated after the 'since' value. If no 'since' value is specified, it defaults
-// to retrieving them all since midnight of the service day.
-func RequestGTFSVehicles(appID string, since int64) ([]GTFSVehiclePosition, error) {
+func RequestVehiclePositions(appID string, since int64) ([]VehiclePosition, error) {
 	query := url.Values{}
 	query.Set("appID", appID)
 	if since > 0 {
@@ -165,34 +90,37 @@ func RequestGTFSVehicles(appID string, since int64) ([]GTFSVehiclePosition, erro
 	}
 	resp, err := http.Get(fmt.Sprintf("%s?%s", VehiclesGTFS, query.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("trimet.RequestGTFSVehicles: %s", err)
+		return nil, errors.WithStack(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("trimet.RequestGTFSVehicles: %s", err)
+		return nil, errors.WithStack(err)
 	}
 
 	feed := gtfs.FeedMessage{}
 
 	err = proto.Unmarshal(body, &feed)
 	if err != nil {
-		return nil, fmt.Errorf("trimet.RequestGTFSVehicles: %s", err)
+		return nil, errors.WithStack(err)
 	}
 
-	var vp []GTFSVehiclePosition
+	var vp []VehiclePosition
 	for _, entity := range feed.Entity {
 		vehicle := entity.GetVehicle()
-		v := GTFSVehiclePosition{
-			Trip: GTFSTrip{
-				TripID:  vehicle.GetTrip().GetTripId(),
-				RouteID: vehicle.GetTrip().GetRouteId(),
+		if vehicle.GetTrip() == nil {
+			continue
+		}
+		v := VehiclePosition{
+			Trip: TripDescriptor{
+				TripID:  vehicle.GetTrip().TripId,
+				RouteID: vehicle.GetTrip().RouteId,
 			},
-			Vehicle: GTFSVehicle{
-				ID:    vehicle.GetVehicle().GetId(),
-				Label: vehicle.GetVehicle().GetLabel(),
+			Vehicle: VehicleDescriptor{
+				ID:    vehicle.GetVehicle().Id,
+				Label: vehicle.GetVehicle().Label,
 			},
-			Position: GTFSPosition{
+			Position: Position{
 				Latitude:  vehicle.GetPosition().GetLatitude(),
 				Longitude: vehicle.GetPosition().GetLongitude(),
 				Bearing:   vehicle.GetPosition().GetBearing(),

@@ -25,16 +25,28 @@ func main() {
 	pgDatabase := flag.String("pg-database", "trimetric", "Postgres database")
 	migrate := flag.Bool("migrate", false, "Perform database migrations if true.")
 	migratePath := flag.String("migrate-path", "./migrations", "Path to migration files")
-	redisAddr := flag.String("redis", "redis:6379", "Redis address")
+	redisAddr := flag.String("redis-addr", "redis:6379", "Redis address")
+	influxURL := flag.String("influx-url", "http://influxdb:8086", "InfluxDB URL")
+	influxUser := flag.String("influx-user", "trimetric", "InfluxDB username")
+	influxPassword := flag.String("influx-password", "example", "InfluxDB password")
+	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Kafka broker address")
+
 	flag.Parse()
+
+	log.SetFlags(log.Lshortfile)
 
 	b, err := ioutil.ReadFile(apiKeyPath)
 	if err != nil {
-		log.Fatalf("Error reading %s: %v", apiKeyPath, err)
+		log.Fatalf("error reading %s: %v", apiKeyPath, err)
 	}
 	apiKey := strings.TrimSpace(string(b))
 
 	db, err := trimetric.OpenDB(fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", *pgUser, *pgPassword, *pgHost, *pgDatabase))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	influxClient, err := trimetric.OpenInfluxDB(*influxURL, *influxUser, *influxPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +64,7 @@ func main() {
 		cancel()
 	}()
 
-	if err := trimetric.Run(ctx, cancel, *addr, apiKey, db, *redisAddr, *webPath); err != nil {
+	if err := trimetric.Run(ctx, cancel, *addr, apiKey, db, influxClient, *kafkaAddr, *redisAddr, *webPath); err != nil {
 		log.Fatal(err)
 	}
 

@@ -1,12 +1,23 @@
 import {createStore, combineReducers} from "redux";
 
-import {UPDATE_DATA, UPDATE_HOME_LOCATION, UPDATE_LOCATION} from "./actions";
+import {
+  UPDATE_DATA,
+  UPDATE_BBOX,
+  UPDATE_HOME_LOCATION,
+  UPDATE_LOCATION
+} from "./actions";
 
 const DEFAULT_LOCATION = {
-  // WeWork
-  lat: 45.5247402,
-  lng: -122.6787931,
+  lat: 45.522236,
+  lng: -122.675827,
   gps: false
+};
+
+const DEFAULT_BOUNDING_BOX = {
+  south: 45.50889931447199,
+  west: -122.68664166674807,
+  north: 45.53556952479618,
+  east: -122.66501233325198
 };
 
 function location(state = DEFAULT_LOCATION, action) {
@@ -22,6 +33,15 @@ function locationClicked(state = null, action) {
   switch (action.type) {
     case UPDATE_LOCATION:
       return action.locationClick;
+    default:
+      return state;
+  }
+}
+
+function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
+  switch (action.type) {
+    case UPDATE_BBOX:
+      return action.boundingBox;
     default:
       return state;
   }
@@ -45,7 +65,7 @@ function stops(state = [], action) {
   }
 }
 
-function vehicles(state = {}, action) {
+function vehicles(state = [], action) {
   switch (action.type) {
     case UPDATE_DATA:
       return action.vehicles;
@@ -55,6 +75,7 @@ function vehicles(state = {}, action) {
 }
 
 export const reducer = combineReducers({
+  boundingBox,
   location,
   locationClicked,
   queryTime,
