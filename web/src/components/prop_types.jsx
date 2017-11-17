@@ -1,17 +1,17 @@
 import PropTypes from "prop-types";
 
 const arrival = PropTypes.shape({
-  route_id: PropTypes.string.isRequired,
-  route_short_name: PropTypes.string.isRequired,
-  route_long_name: PropTypes.string.isRequired,
-  route_type: PropTypes.number.isRequired,
-  route_color: PropTypes.string.isRequired,
-  route_text_color: PropTypes.string.isRequired,
-  trip_id: PropTypes.string.isRequired,
-  stop_id: PropTypes.string.isRequired,
-  headsign: PropTypes.string.isRequired,
   arrival_time: PropTypes.string,
   departure_time: PropTypes.string,
+  headsign: PropTypes.string.isRequired,
+  route_color: PropTypes.string.isRequired,
+  route_id: PropTypes.string.isRequired,
+  route_long_name: PropTypes.string.isRequired,
+  route_short_name: PropTypes.string.isRequired,
+  route_text_color: PropTypes.string.isRequired,
+  route_type: PropTypes.number.isRequired,
+  stop_id: PropTypes.string.isRequired,
+  trip_id: PropTypes.string.isRequired,
   vehicle_id: PropTypes.string,
   vehicle_label: PropTypes.string,
   vehicle_position: PropTypes.shape({
@@ -29,8 +29,6 @@ const arrivals = PropTypes.arrayOf(arrival);
 
 const arrivalTime = PropTypes.string.isRequired;
 
-const google = PropTypes.object;
-
 const location = PropTypes.shape({
   locationType: PropTypes.string.isRequired,
   lat: PropTypes.number.isRequired,
@@ -38,8 +36,6 @@ const location = PropTypes.shape({
 });
 
 const locationClicked = PropTypes.object;
-
-const map = PropTypes.object;
 
 const stop = PropTypes.shape({
   arrivals: arrivals,
@@ -69,10 +65,8 @@ export const TrimetricPropTypes = {
   arrival,
   arrivals,
   arrivalTime,
-  google,
   location,
   locationClicked,
-  map,
   stop,
   stops,
   vehiclePosition,

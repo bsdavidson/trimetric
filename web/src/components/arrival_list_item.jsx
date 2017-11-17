@@ -50,18 +50,16 @@ export class ArrivalListItem extends React.Component {
         <div className="arrival-id" style={routeStyle}>
           {this.props.arrival.route_id}
         </div>
-        <div className="arrival-name">{this.props.arrival.headsign}</div>
-        <div className="arrival-metrics">
-          <div className="arrival-metric arrival-bus-distance">
-            {this.props.arrival.vehicle_position.lat},{" "}
-            {this.props.arrival.vehicle_position.lng}
-          </div>
-          <div className="arrival-metric arrival-est-time">
-            {this.props.arrival.vehicle_id} - {this.props.arrivalTime}
-          </div>
-          <div className="arrival-metric arrival-direction">
-            Traveling:{" "}
-            {degreeToCompass(this.props.arrival.vehicle_position.bearing)}
+        <div className="arrival-name-metrics">
+          <div className="arrival-name">{this.props.arrival.headsign}</div>
+          <div className="arrival-metrics">
+            <div className="arrival-metric arrival-est-time">
+              {this.props.arrivalTime}
+            </div>
+            <div className="arrival-metric arrival-direction">
+              Traveling:{" "}
+              {degreeToCompass(this.props.arrival.vehicle_position.bearing)}
+            </div>
           </div>
         </div>
       </div>

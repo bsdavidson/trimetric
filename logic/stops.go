@@ -111,21 +111,21 @@ func (sd *StopSQLDataset) FetchWithinBox(w, s, e, n string) ([]StopWithDistance,
 
 // Arrival ...
 type Arrival struct {
-	 RouteID         string          `json:"route_id"`
-	 RouteShortName  string          `json:"route_short_name"`
-	 RouteLongName   string          `json:"route_long_name"`
-	 RouteType       int             `json:"route_type"`
-	 RouteColor      string          `json:"route_color"`
-	 RouteTextColor  string          `json:"route_text_color"`
-	 TripID          string          `json:"trip_id"`
-	 StopID          string          `json:"stop_id"`
-	 Headsign        string          `json:"headsign"`
-	 ArrivalTime     *trimet.Time    `json:"arrival_time"`
-	 DepartureTime   *trimet.Time    `json:"departure_time"`
-	 VehicleID       *string         `json:"vehicle_id"`
-	 VehicleLabel    *string         `json:"vehicle_label"`
-	 VehiclePosition trimet.Position `json:"vehicle_position"`
-	 Date            time.Time       `json:"date"`
+	RouteID         string          `json:"route_id"`
+	RouteShortName  string          `json:"route_short_name"`
+	RouteLongName   string          `json:"route_long_name"`
+	RouteType       int             `json:"route_type"`
+	RouteColor      string          `json:"route_color"`
+	RouteTextColor  string          `json:"route_text_color"`
+	TripID          string          `json:"trip_id"`
+	StopID          string          `json:"stop_id"`
+	Headsign        string          `json:"headsign"`
+	ArrivalTime     *trimet.Time    `json:"arrival_time"`
+	DepartureTime   *trimet.Time    `json:"departure_time"`
+	VehicleID       *string         `json:"vehicle_id"`
+	VehicleLabel    *string         `json:"vehicle_label"`
+	VehiclePosition trimet.Position `json:"vehicle_position"`
+	Date            time.Time       `json:"date"`
 }
 
 func parseDuration(s string) (*time.Duration, error) {

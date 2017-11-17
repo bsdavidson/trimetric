@@ -1,14 +1,21 @@
 FROM node:8
 
-ARG GOOGLE_MAPS_API_KEY
-
 COPY package.json /opt/trimetric/package.json
 COPY yarn.lock /opt/trimetric/yarn.lock
 WORKDIR /opt/trimetric/
 RUN yarn install
+
+# Temporarily pinning to a git commit because the transition flyto feature is
+# available in master. The NPM module doesn't have a post install script, so we
+# we have to do a build manually.
+WORKDIR /opt/trimetric/node_modules/react-map-gl/
+RUN npm uninstall babel && \
+    yarn install --dev && \
+    yarn build
+WORKDIR /opt/trimetric/
+
 COPY . /opt/trimetric/
 
-ENV GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
 RUN yarn dist
 
 EXPOSE 8080 9876

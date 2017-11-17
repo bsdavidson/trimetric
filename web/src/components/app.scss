@@ -28,7 +28,7 @@
   }
 }
 
-@media screen and (max-width:639px) {
+@media screen and (max-width: 639px) {
   .app {
     .app-map {
       @include panel-narrow-top();

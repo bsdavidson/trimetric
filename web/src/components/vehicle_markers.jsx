@@ -4,7 +4,7 @@ import {withRouter} from "react-router-dom";
 
 import {TrimetricPropTypes} from "./prop_types";
 import {getVehicleType} from "../data";
-import Marker from "./marker";
+import {Marker} from "react-map-gl";
 
 export class VehicleMarkers extends React.Component {
   constructor(props) {
@@ -12,34 +12,25 @@ export class VehicleMarkers extends React.Component {
     this.markers = [];
   }
 
-  getVehicleOpts(vehicle) {
-    return {
-      position: {
-        lat: vehicle.position.lat,
-        lng: vehicle.position.lng
-      },
-      icon: {
-        url: `./assets/${getVehicleType(vehicle.route_type)}.png`,
-        scaledSize: new this.props.google.maps.Size(25, 25)
-      },
-      opacity: 0.8,
-      title: vehicle.vehicle.label
-    };
-  }
-
   render() {
-    let {vehicles, google, map} = this.props;
-    if (!vehicles || !google || !map) {
+    let {vehicles} = this.props;
+    if (!vehicles) {
       return null;
     }
     this.markers = vehicles.map(v => {
       return (
         <Marker
           key={v.vehicle.id}
-          google={google}
-          map={map}
-          opts={this.getVehicleOpts(v)}
-        />
+          latitude={v.position.lat}
+          longitude={v.position.lng}
+          offsetLeft={-12}
+          offsetTop={-12}>
+          <img
+            src={`/assets/${getVehicleType(v.route_type)}.png`}
+            width={25}
+            height={25}
+          />
+        </Marker>
       );
     });
     return <div>{this.markers}</div>;
@@ -47,8 +38,6 @@ export class VehicleMarkers extends React.Component {
 }
 
 VehicleMarkers.propTypes = {
-  google: TrimetricPropTypes.google,
-  map: TrimetricPropTypes.map,
   vehicles: TrimetricPropTypes.vehiclePositions
 };
 

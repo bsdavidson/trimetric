@@ -1,32 +1,34 @@
-@import '~normalize.css/normalize.css';
+@import "~normalize.css/normalize.css";
 @import url(https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic);
-@import 'glyphicons.scss';
+@import "glyphicons.scss";
 
 $background-dark: #2c3e50;
 $background-light: #34495e;
 $foreground-dark: #7f8c8d;
 $foreground-light: #ecf0f1;
 $turquoise-light: #1abc9c;
-$yellow-light: #F1C40F;
+$yellow-light: #f1c40f;
 
 // This button style is used for the back button on the arrivals list.
 @mixin button {
-  background: #fff;
-  border-radius: 3px;
-  border: 1px solid #aaa;
+  border-radius: 10px;
+  border: 2px solid rgba($foreground-light, 0.5);
+  color: $foreground-light;
   cursor: pointer;
   float: left;
   font-size: 0.7em;
+  font-weight: bold;
   margin: 0.5em 0 0.5em 0;
-  padding: 0.5em;
+  text-transform: uppercase;
+  padding: 0.5em 0.7em;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   &:hover {
-    background: $turquoise-light;
-    color: $foreground-light;
+    border-color: $yellow-light;
+    color: lighten($yellow-light, 48%);
   }
 }
 
@@ -35,12 +37,14 @@ $yellow-light: #F1C40F;
 // interactive content, and the right one is used to display the map.
 
 @mixin panel-wide-left {
-  bottom: 0;
-  left: 0;
+  bottom: 20px;
+  left: 20px;
   overflow-y: scroll;
   position: absolute;
-  top: 40px;
-  width: 50%;
+  top: 20px;
+  width: 400px;
+  z-index: 2;
+  background: rgba($background-dark, 0.9);
 }
 
 @mixin panel-wide-right {
@@ -48,8 +52,7 @@ $yellow-light: #F1C40F;
   position: absolute;
   right: 0;
   top: 0;
-  width: 50%;
-  z-index: 2;
+  width: 100%;
 }
 
 // For a narrow viewport, panel-narrow-bottom and panel-narrow-top split the
@@ -61,15 +64,15 @@ $yellow-light: #F1C40F;
   bottom: 0;
   left: 0;
   overflow-y: scroll;
-  position: relative;
-  top: 2em;
+  position: absolute;
+  top: 50%;
   width: 100%;
 }
 
 @mixin panel-narrow-top {
-  height: 200px;
+  bottom: 50%;
   left: 0;
-  position: relative;
+  position: absolute;
   top: 0;
   width: 100%;
 }
@@ -99,7 +102,7 @@ body {
   font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
 
-@import './src/components/app.scss';
-@import './src/components/arrival_list.scss';
-@import './src/components/map.scss';
-@import './src/components/stop_list.scss';
+@import "./src/components/app.scss";
+@import "./src/components/arrival_list.scss";
+@import "./src/components/map.scss";
+@import "./src/components/stop_list.scss";

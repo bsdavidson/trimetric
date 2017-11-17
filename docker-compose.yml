@@ -79,8 +79,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-web
-      args:
-        - GOOGLE_MAPS_API_KEY
     command: ["yarn", "run", "watch"]
     depends_on:
       - api
@@ -97,8 +95,6 @@ services:
       - "2181:2181"
 
 secrets:
-  google-maps-api-key:
-    file: ./secrets/google-maps-api-key
   trimet-api-key:
     file: ./secrets/trimet-api-key
 

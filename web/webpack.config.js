@@ -5,6 +5,7 @@ const ExtractTextPlugin = require("extract-text-webpack-plugin");
 module.exports = {
   devtool: "source-map",
   devServer: {
+    historyApiFallback: true,
     proxy: {
       "/api": {
         target: "http://api:80"

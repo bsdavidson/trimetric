@@ -1,5 +1,6 @@
 .stop-list {
   @include panel-wide-left;
+  padding: 20px 10px;
 
   h3 {
     @include panel-title;
@@ -8,11 +9,11 @@
   .use-current {
     color: $foreground-dark;
     cursor: pointer;
-    font-size: 0.8em;
+    font-size: 1.5em;
     padding: 0.5em;
     position: absolute;
-    right: 0em;
-    top: 0em;
+    right: 0.3em;
+    top: 0.1em;
 
     &:hover {
       color: $foreground-light;
@@ -20,14 +21,14 @@
   }
 }
 
-@media screen and (max-width:639px) {
+@media screen and (max-width: 639px) {
   .stop-list {
     @include panel-narrow-bottom;
   }
 }
 
 .stop-list-items {
-  background: $background-light;
+  // background: $background-light;
   color: $foreground-light;
   overflow: hidden;
 

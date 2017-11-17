@@ -1,24 +1,35 @@
 .arrival-list {
   @include panel-wide-left;
+  border-radius: 4px;
 
   .back-button {
     @include button;
+    font-size: 0.8rem;
+    left: 0.6em;
+    padding-right: 0.9em;
     position: relative;
-    left: 0.5em;
+    text-decoration: none;
+    top: 0.1rem;
   }
 
   .arrival-list-description {
     @include panel-title;
     clear: left;
     cursor: pointer;
+    margin-top: 3em;
 
     .arrival-list-directions {
-      @include panel-subtitle;
+      @include button;
+      font-size: 0.8rem;
+      padding-top: 0.5rem;
+      position: absolute;
+      right: 0.6rem;
+      top: 0.1rem;
     }
   }
 }
 
-@media screen and (max-width:639px) {
+@media screen and (max-width: 639px) {
   .arrival-list {
     @include panel-narrow-bottom;
   }
@@ -55,24 +66,42 @@
       width: 4em;
     }
 
+    .arrival-name-metrics {
+      position: relative;
+      width: 100%;
+    }
+
     .arrival-name {
-      display: inline-block;
       font-size: 1em;
-      padding-left: 0.5em;
-      width: 82%;
+      left: 0.5em;
+      overflow: hidden;
+      position: absolute;
+      right: 0.5em;
+      text-overflow: ellipsis;
+      top: -1.1em;
+      white-space: nowrap;
     }
 
     .arrival-metrics {
-      font-size: 0.9em;
-      padding-top: 0em;
-      text-align: right;
-      width: 100%;
+      color: darken($foreground-dark, 10%);
+      display: flex;
+      font-size: 0.8em;
+      left: 0.7em;
+      position: absolute;
+      right: 0.7em;
+      text-align: left;
+      top: 0.2em;
 
       .arrival-metric {
         display: inline-block;
-        padding: 0em 1em 0 0;
-        text-align: center;
+        text-align: left;
         width: auto;
+      }
+      .arrival-est-time {
+        width: 100%;
+      }
+      .arrival-direction {
+        white-space: nowrap;
       }
     }
   }

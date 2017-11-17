@@ -1,97 +1,106 @@
-import deepEqual from "deep-equal";
-import GoogleMapsLoader from "google-maps";
-import React from "react";
-import PropTypes from "prop-types";
+import React, {Component} from "react";
+import {connect} from "react-redux";
 
-export class Map extends React.Component {
+import {TrimetricPropTypes} from "./prop_types";
+import PropTypes from "prop-types";
+import InteractiveMap, {experimental} from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+class MapBox extends Component {
   constructor(props) {
     super(props);
-    this.prevOpts = null;
-    this.state = {
-      google: null,
-      map: null
-    };
 
-    this.setMapNode = this.setMapNode.bind(this);
+    this.state = {
+      viewport: {
+        latitude: this.props.location.lat,
+        longitude: this.props.location.lng,
+        zoom: 16
+      },
+      settings: {
+        dragPan: true
+      }
+    };
+    this.handleMapRef = this.handleMapRef.bind(this);
+    this.handleViewportChange = this.handleViewportChange.bind(this);
   }
 
-  componentDidMount() {
-    GoogleMapsLoader.KEY = this.props.apiKey;
-    GoogleMapsLoader.load(google => {
-      if (this.props.onGoogle) {
-        this.props.onGoogle(google);
-      }
-      this.setState({
-        google
-      });
-      this.createOrUpdateMap();
+  handleMapRef(map) {
+    this.mapRef = map;
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (
+      this.props.locationClicked === nextProps.locationClicked ||
+      !nextProps.locationClicked
+    ) {
+      return;
+    }
+    this.handleViewportChange({
+      latitude: nextProps.locationClicked.lat,
+      longitude: nextProps.locationClicked.lng,
+      zoom: 16,
+      transitionInterpolator: experimental.viewportFlyToInterpolator,
+      transitionDuration: 1000
     });
   }
 
-  componentDidUpdate() {
-    this.createOrUpdateMap();
+  handleViewportChange(viewport) {
+    this.setState({viewport: Object.assign({}, this.state.viewport, viewport)});
+    if (this.props.onBoundsChanged) {
+      let bounds = this.mapRef.getMap().getBounds();
+      this.props.onBoundsChanged({
+        sw: {lat: bounds.getSouth(), lng: bounds.getWest()},
+        ne: {lat: bounds.getNorth(), lng: bounds.getEast()}
+      });
+    }
   }
 
-  createOrUpdateMap() {
-    let opts = Object.assign({}, Map.defaultProps.opts, this.props.opts);
-    if (this.state.map) {
-      if (!deepEqual(this.prevOpts, opts)) {
-        this.prevOpts = opts;
-        this.state.map.setOptions(opts);
+  renderChildren() {
+    return React.Children.map(this.props.children, child => {
+      if (!React.isValidElement(child)) {
+        return child;
       }
-    } else if (this.state.google) {
-      let map = new this.state.google.maps.Map(this.mapNode, opts);
-      this.setState({
-        map
+      return React.cloneElement(child, {
+        map: {}
       });
-      this.prevOpts = opts;
-    }
+    });
   }
 
   render() {
     return (
-      <div style={this.props.style} className={this.props.className}>
-        <div className="map" ref={this.setMapNode}>
-          Loading map...
-        </div>
-        {this.renderChildren()}
+      <div id="mapbox" className="app-map">
+        <InteractiveMap
+          ref={this.handleMapRef}
+          onViewportChange={this.handleViewportChange}
+          mapboxApiAccessToken={process.env.MAPBOX_ACCESS_TOKEN}
+          width={this.props.width}
+          height={this.props.height}
+          latitude={this.state.viewport.latitude}
+          longitude={this.state.viewport.longitude}
+          transitionInterpolator={this.state.viewport.transitionInterpolator}
+          transitionDuration={this.state.viewport.transitionDuration}
+          zoom={this.state.viewport.zoom}
+          dragPan={this.state.settings.dragPan}>
+          {this.renderChildren()}
+        </InteractiveMap>
       </div>
     );
   }
-
-  renderChildren() {
-    if (!this.state) {
-      return this.props.children;
-    }
-    return React.Children.map(this.props.children, child => {
-      return React.cloneElement(child, {
-        map: this.state.map,
-        google: this.state.google
-      });
-    });
-  }
-
-  setMapNode(node) {
-    this.mapNode = node;
-  }
 }
 
-Map.defaultProps = {
-  opts: {
-    center: {
-      lat: 53.2238484,
-      lng: -4.195443
-    },
-    zoom: 14,
-    fullscreenControl: true
-  }
+MapBox.propTypes = {
+  width: PropTypes.number.isRequired,
+  height: PropTypes.number.isRequired,
+  onBoundsChanged: PropTypes.func,
+  location: TrimetricPropTypes.location,
+  locationClicked: TrimetricPropTypes.locationClicked
 };
 
-Map.propTypes = {
-  apiKey: PropTypes.string.isRequired,
-  children: PropTypes.node,
-  className: PropTypes.string,
-  onGoogle: PropTypes.func,
-  opts: PropTypes.object,
-  style: PropTypes.object
-};
+function mapStateToProps(state) {
+  return {
+    location: state.location,
+    locationClicked: state.locationClicked
+  };
+}
+
+export default connect(mapStateToProps)(MapBox);

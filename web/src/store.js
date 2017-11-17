@@ -16,10 +16,14 @@ const DEFAULT_LOCATION = {
 };
 
 const DEFAULT_BOUNDING_BOX = {
-  south: 45.50889931447199,
-  west: -122.68664166674807,
-  north: 45.53556952479618,
-  east: -122.66501233325198
+  sw: {
+    lat: 45.50889931447199,
+    lng: -122.68664166674807
+  },
+  ne: {
+    lat: 45.53556952479618,
+    lng: -122.66501233325198
+  }
 };
 
 function location(state = DEFAULT_LOCATION, action) {

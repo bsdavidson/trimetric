@@ -35,10 +35,8 @@ export class Trimet {
         lat: null,
         lng: null,
         bbox: {
-          south: null,
-          north: null,
-          east: null,
-          west: null
+          sw: {},
+          ne: {}
         }
       },
       stops: null
@@ -61,7 +59,7 @@ export class Trimet {
     if (
       this.stopsCache.location.lat === lat &&
       this.stopsCache.location.lng === lng &&
-      (bbox && this.stopsCache.location.bbox.south === bbox.south)
+      (bbox && this.stopsCache.location.bbox.sw.lat === bbox.sw.lat)
     ) {
       return Promise.resolve(this.stopsCache.stops);
     }
@@ -73,10 +71,10 @@ export class Trimet {
         lat: lat,
         lng: lng,
         distance: 200,
-        south: bbox.south,
-        west: bbox.west,
-        north: bbox.north,
-        east: bbox.east
+        south: bbox.sw.lat,
+        west: bbox.sw.lng,
+        north: bbox.ne.lat,
+        east: bbox.ne.lng
       });
     return this.fetch(stopsAPIURL)
       .then(response => response.json())

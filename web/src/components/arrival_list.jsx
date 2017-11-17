@@ -61,7 +61,6 @@ export class ArrivalList extends React.Component {
                 arrival={a}
                 arrivalTime={formatEstimate(a.estimated)}
                 color={colorMap.getColorForKey(a.route_id)}
-                google={this.props.google}
                 key={idx}
               />
             );
@@ -73,7 +72,6 @@ export class ArrivalList extends React.Component {
 }
 
 ArrivalList.propTypes = {
-  google: TrimetricPropTypes.google,
   location: TrimetricPropTypes.location,
   onRouteNameClick: PropTypes.func.isRequired,
   stop: TrimetricPropTypes.stop
