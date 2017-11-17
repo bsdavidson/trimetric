@@ -84,7 +84,6 @@ func (sd *StopSQLDataset) FetchWithinBox(w, s, e, n string) ([]StopWithDistance,
 			parent_station, direction, position
 		FROM stops s
 		WHERE s.lat_lon && ST_MakeEnvelope($1, $2, $3, $4, 4326)
-		LIMIT 100
 	`
 	rows, err := sd.DB.Query(q, w, s, e, n)
 	if err != nil {

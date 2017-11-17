@@ -3,7 +3,7 @@ import {createStore, combineReducers} from "redux";
 import {
   LocationTypes,
   UPDATE_DATA,
-  UPDATE_BOUNDING_BOX,
+  UPDATE_VIEWPORT,
   UPDATE_HOME_LOCATION,
   UPDATE_LOCATION
 } from "./actions";
@@ -26,6 +26,35 @@ const DEFAULT_BOUNDING_BOX = {
   }
 };
 
+export const DEFAULT_ZOOM = 16;
+
+function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
+  switch (action.type) {
+    case UPDATE_VIEWPORT:
+      return action.boundingBox;
+    default:
+      return state;
+  }
+}
+
+function geoJsonData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_DATA:
+      return action.geoJsonData;
+    default:
+      return state;
+  }
+}
+
+function iconData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_DATA:
+      return action.iconData;
+    default:
+      return state;
+  }
+}
+
 function location(state = DEFAULT_LOCATION, action) {
   switch (action.type) {
     case UPDATE_HOME_LOCATION:
@@ -39,24 +68,6 @@ function locationClicked(state = null, action) {
   switch (action.type) {
     case UPDATE_LOCATION:
       return action.locationClick;
-    default:
-      return state;
-  }
-}
-
-function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
-  switch (action.type) {
-    case UPDATE_BOUNDING_BOX:
-      return action.boundingBox;
-    default:
-      return state;
-  }
-}
-
-function queryTime(state = null, action) {
-  switch (action.type) {
-    case UPDATE_DATA:
-      return action.queryTime;
     default:
       return state;
   }
@@ -80,13 +91,24 @@ function vehicles(state = [], action) {
   }
 }
 
+function zoom(state = DEFAULT_ZOOM, action) {
+  switch (action.type) {
+    case UPDATE_VIEWPORT:
+      return action.zoom;
+    default:
+      return state;
+  }
+}
+
 export const reducer = combineReducers({
   boundingBox,
+  geoJsonData,
+  iconData,
   location,
   locationClicked,
-  queryTime,
   stops,
-  vehicles
+  vehicles,
+  zoom
 });
 
 export const store = createStore(

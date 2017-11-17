@@ -38,6 +38,12 @@
 .arrival-list-items {
   margin-top: 1em;
 
+  .arrival-list-none {
+    color: $foreground-light;
+    padding: 0.8em;
+    font-size: 1.1em;
+  }
+
   .arrival-list-item {
     align-items: center;
     background: $foreground-light;

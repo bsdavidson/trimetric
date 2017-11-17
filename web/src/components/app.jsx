@@ -6,11 +6,9 @@ import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
 
 import ArrivalList from "./arrival_list";
-import ArrivalMarkers from "./arrival_markers";
 import Map from "./map";
 import StopList from "./stop_list";
-import VehicleMarkers from "./vehicle_markers";
-import {updateBoundingBox} from "../actions";
+import {updateViewport} from "../actions";
 
 class App extends Component {
   constructor(props) {
@@ -41,7 +39,7 @@ class App extends Component {
   }
 
   render() {
-    let {location, stops, queryTime, vehicles} = this.props;
+    let {location, stops, queryTime} = this.props;
     if (!stops) {
       return <div>No stops</div>;
     }
@@ -53,27 +51,9 @@ class App extends Component {
     let page;
     let markers = [];
     if (stop) {
-      if (stop.arrivals) {
-        markers.push(<ArrivalMarkers key="arrivals" stop={stop} />);
-      }
-      page = <ArrivalList key="arrivalPage" stop={stop} />;
-    } else {
-      page = <StopList key="stopPage" stops={stops} />;
-
-      stops.forEach(s => {
-        markers.push(
-          <Marker
-            key={"stop-" + s.id}
-            latitude={s.lat}
-            longitude={s.lng}
-            offsetLeft={-12}
-            offsetTop={-12}>
-            <span className="fui-location" />
-          </Marker>
-        );
-      });
-
-      markers.push(<VehicleMarkers key="allTrimet" vehicles={vehicles} />);
+      page = <ArrivalList stop={stop} />;
+    } else if (this.props.zoom > 15.5) {
+      page = <StopList stops={stops} />;
     }
 
     markers.push(
@@ -95,7 +75,7 @@ class App extends Component {
           </div>
         </nav>
         <Map
-          onBoundsChanged={this.props.onBoundsChanged}
+          onViewportChange={this.props.onViewportChange}
           width={this.state.mapWidth}
           height={this.state.mapHeight}>
           {markers}
@@ -118,14 +98,15 @@ function mapStateToProps(state) {
     locationClicked: state.locationClicked,
     stops: state.stops,
     queryTime: state.queryTime,
-    vehicles: state.vehicles
+    vehicles: state.vehicles,
+    zoom: state.zoom
   };
 }
 
 function mapDispatchToProps(dispatch) {
   return {
-    onBoundsChanged: bounds => {
-      return dispatch(updateBoundingBox(bounds));
+    onViewportChange: (bounds, zoom) => {
+      dispatch(updateViewport(bounds, zoom));
     }
   };
 }

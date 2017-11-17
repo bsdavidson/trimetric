@@ -39,6 +39,27 @@ export class ArrivalList extends React.Component {
   }
 
   render() {
+    let items = this.props.stop.arrivals.map((a, idx) => {
+      return (
+        <ArrivalListItem
+          arrival={a}
+          arrivalTime={formatEstimate(a.estimated)}
+          color={colorMap.getColorForKey(a.route_id)}
+          key={idx}
+        />
+      );
+    });
+
+    if (items.length === 0) {
+      items = (
+        <div className="arrival-list-none">
+          {" "}
+          There are no arrivals within the next hour for this stop. Better start
+          walking.
+        </div>
+      );
+    }
+
     return (
       <div className="arrival-list">
         <Link className="back-button" to="/">
@@ -54,18 +75,8 @@ export class ArrivalList extends React.Component {
             Get Directions
           </span>
         </h3>
-        <div className="arrival-list-items">
-          {this.props.stop.arrivals.map((a, idx) => {
-            return (
-              <ArrivalListItem
-                arrival={a}
-                arrivalTime={formatEstimate(a.estimated)}
-                color={colorMap.getColorForKey(a.route_id)}
-                key={idx}
-              />
-            );
-          })}
-        </div>
+
+        <div className="arrival-list-items">{items}</div>
       </div>
     );
   }

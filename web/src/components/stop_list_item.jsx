@@ -4,7 +4,7 @@ import {Link, withRouter} from "react-router-dom";
 
 import {TrimetricPropTypes} from "./prop_types";
 import {formatDistance} from "../helpers/directions";
-import {humanTimeUntilEpoch} from "../helpers/times";
+// import {humanTimeUntilEpoch} from "../helpers/times";
 
 export class StopListItem extends React.Component {
   constructor(props) {
@@ -16,10 +16,10 @@ export class StopListItem extends React.Component {
       latitude: this.props.stop.lat,
       longitude: this.props.stop.lng
     };
-    let arrivalInfo = {
-      route: this.props.stop.arrivals[0].route_id,
-      estimated: humanTimeUntilEpoch(this.props.stop.arrivals[0].estimated)
-    };
+    // let arrivalInfo = {
+    //   route: this.props.stop.arrivals[0].route_id,
+    //   estimated: humanTimeUntilEpoch(this.props.stop.arrivals[0].estimated)
+    // };
     return (
       <Link className="stop-link" to={`/stop/${this.props.stop.id}`}>
         <div className="stop-list-item">
@@ -36,8 +36,8 @@ export class StopListItem extends React.Component {
               {formatDistance(this.props.location, location)}
             </span>{" "}
             feet away.
-            <span className="stop-route"> {arrivalInfo.route_id} arrives </span>
-            <span className="stop-estimate">{arrivalInfo.estimated} </span>
+            {/* <span className="stop-route"> {arrivalInfo.route_id} arrives </span> */}
+            {/* <span className="stop-estimate">{arrivalInfo.estimated} </span> */}
           </p>
         </div>
       </Link>

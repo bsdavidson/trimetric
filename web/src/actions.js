@@ -1,5 +1,5 @@
 export const UPDATE_DATA = "UPDATE_DATA";
-export const UPDATE_BOUNDING_BOX = "UPDATE_BOUNDING_BOX";
+export const UPDATE_VIEWPORT = "UPDATE_VIEWPORT";
 export const UPDATE_LOCATION = "UPDATE_LOCATION";
 export const UPDATE_HOME_LOCATION = "UPDATE_HOME_LOCATION";
 
@@ -9,12 +9,13 @@ export const LocationTypes = {
   HOME: "HOME"
 };
 
-export function updateData(stops, vehicles, queryTime) {
+export function updateData(stops, vehicles, geoJsonData, iconData) {
   return {
     type: UPDATE_DATA,
     stops,
     vehicles,
-    queryTime
+    geoJsonData,
+    iconData
   };
 }
 
@@ -22,17 +23,18 @@ export function updateHomeLocation(lat, lng, gps = true) {
   return {
     type: UPDATE_HOME_LOCATION,
     home: {
-      lat: lat,
-      lng: lng,
-      gps: gps
+      lat,
+      lng,
+      gps
     }
   };
 }
 
-export function updateBoundingBox(bbox) {
+export function updateViewport(boundingBox, zoom) {
   return {
-    type: UPDATE_BOUNDING_BOX,
-    boundingBox: bbox
+    type: UPDATE_VIEWPORT,
+    boundingBox,
+    zoom
   };
 }
 

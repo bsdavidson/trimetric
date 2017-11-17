@@ -13,27 +13,37 @@ export class VehicleMarkers extends React.Component {
   }
 
   render() {
-    let {vehicles} = this.props;
+    let {vehicles, boundingBox} = this.props;
     if (!vehicles) {
       return null;
     }
-    this.markers = vehicles.map(v => {
-      return (
-        <Marker
-          key={v.vehicle.id}
-          latitude={v.position.lat}
-          longitude={v.position.lng}
-          offsetLeft={-12}
-          offsetTop={-12}>
-          <img
-            src={`/assets/${getVehicleType(v.route_type)}.png`}
-            width={25}
-            height={25}
-          />
-        </Marker>
-      );
-    });
-    return <div>{this.markers}</div>;
+
+    return (
+      <div>
+        {vehicles
+          .filter(
+            v =>
+              v.position.lat <= boundingBox.ne.lat &&
+              v.position.lat >= boundingBox.sw.lat &&
+              v.position.lng <= boundingBox.ne.lng &&
+              v.position.lng >= boundingBox.sw.lng
+          )
+          .map(v => (
+            <Marker
+              key={v.vehicle.id}
+              latitude={v.position.lat}
+              longitude={v.position.lng}
+              offsetLeft={-12}
+              offsetTop={-12}>
+              <img
+                src={`/assets/${getVehicleType(v.route_type)}.png`}
+                width={25}
+                height={25}
+              />
+            </Marker>
+          ))}
+      </div>
+    );
   }
 }
 
@@ -43,7 +53,8 @@ VehicleMarkers.propTypes = {
 
 function mapStateToProps(state) {
   return {
-    locationClicked: state.locationClicked
+    locationClicked: state.locationClicked,
+    boundingBox: state.boundingBox
   };
 }
 

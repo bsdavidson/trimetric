@@ -31,14 +31,13 @@ export class Trimet {
   constructor(store, _fetch = fetch) {
     this.appId = process.env.TRIMET_API_KEY;
     this.stopsCache = {
-      location: {
-        lat: null,
-        lng: null,
-        bbox: {
-          sw: {},
-          ne: {}
-        }
+      lat: null,
+      lng: null,
+      bbox: {
+        sw: {},
+        ne: {}
       },
+
       stops: null
     };
     this.fetchStopsID = 0;
@@ -57,9 +56,13 @@ export class Trimet {
     let id = this.fetchStopsID;
 
     if (
-      this.stopsCache.location.lat === lat &&
-      this.stopsCache.location.lng === lng &&
-      (bbox && this.stopsCache.location.bbox.sw.lat === bbox.sw.lat)
+      this.stopsCache.lat === lat &&
+      this.stopsCache.lng === lng &&
+      (bbox &&
+        this.stopsCache.bbox.sw.lat === bbox.sw.lat &&
+        this.stopsCache.bbox.sw.lng === bbox.sw.lng &&
+        this.stopsCache.bbox.ne.lat === bbox.ne.lat &&
+        this.stopsCache.bbox.ne.lng === bbox.ne.lng)
     ) {
       return Promise.resolve(this.stopsCache.stops);
     }
@@ -81,11 +84,9 @@ export class Trimet {
       .then(data => {
         if (id === this.fetchStopsID) {
           this.stopsCache = {
-            location: {
-              lat: lat,
-              lng: lng,
-              bbox: bbox
-            },
+            lat: lat,
+            lng: lng,
+            bbox: bbox,
             stops: data.stops
           };
         }
@@ -116,24 +117,37 @@ export class Trimet {
   }
 
   fetchData(lat, lng, bbox) {
-    let stops, arrivals;
-    return this.fetchStops(lat, lng, bbox)
-      .then(s => {
-        stops = s;
-        return this.fetchArrivals(s);
-      })
-      .then(a => {
-        arrivals = a;
-        return this.fetchVehicles();
-      })
-      .then(vehicles => ({
-        stops,
-        arrivals,
-        vehicles
-      }))
-      .then(data => {
-        return combineResponses(data.stops, data.arrivals, data.vehicles);
+    return Promise.all([
+      this.fetchStops(lat, lng, bbox),
+      this.fetchVehicles()
+    ]).then(results => {
+      let [stops, vehicles] = results;
+
+      stops.forEach(s => {
+        s.arrivals = [];
       });
+
+      return {stops, vehicles};
+    });
+
+    // let stops, arrivals;
+    // return this.fetchStops(lat, lng, bbox)
+    //   .then(s => {
+    //     stops = s;
+    //     return this.fetchArrivals(s);
+    //   })
+    //   .then(a => {
+    //     arrivals = a;
+    //     return this.fetchVehicles();
+    //   })
+    //   .then(vehicles => ({
+    //     stops,
+    //     arrivals,
+    //     vehicles
+    //   }))
+    //   .then(data => {
+    //     return combineResponses(data.stops, data.arrivals, data.vehicles);
+    //   });
   }
 
   start() {
@@ -156,11 +170,55 @@ export class Trimet {
   update() {
     let {lat, lng} = this.store.getState().location;
     let bbox = this.store.getState().boundingBox;
+
     let newData = this.fetchData(lat, lng, bbox);
+
     newData
       .then(data => {
+        let geoJsonData = data.stops
+          .map(s => ({
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [s.lng, s.lat]
+            },
+            properties: {
+              lineColor: [255, 0, 0, 255],
+              fillColor: [0, 0, 0, 255],
+              radius: 1
+            }
+          }))
+          .concat(
+            data.vehicles.map(v => ({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [v.position.lng, v.position.lat]
+              },
+              properties: {
+                lineColor: [246, 76, 0, 255],
+                fillColor: [246, 76, 0, 255],
+                radius: 2.5
+              }
+            }))
+          );
+
+        let iconData = data.stops
+          .map(s => ({
+            position: [s.lng, s.lat, 0],
+            icon: "stop",
+            size: 1
+          }))
+          .concat(
+            data.vehicles.map(v => ({
+              position: [v.position.lng, v.position.lat, 10],
+              icon: getVehicleType(v.routeType),
+              size: 1.4
+            }))
+          );
+
         this.store.dispatch(
-          updateData(data.stops, data.vehicles, data.queryTime)
+          updateData(data.stops, data.vehicles, geoJsonData, iconData)
         );
         let lc = this.store.getState().locationClicked;
         if (lc) {
@@ -218,7 +276,6 @@ export function combineResponses(stops, arrivals, vehicles) {
     return newStop;
   });
   return {
-    queryTime: moment().valueOf(),
     stops: newStops,
     vehicles: vehicles
   };

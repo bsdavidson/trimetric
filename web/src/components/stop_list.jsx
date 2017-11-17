@@ -16,9 +16,7 @@ export class StopList extends React.Component {
   }
 
   createStops(stops) {
-    stops = stops
-      .filter(s => s.arrivals.length > 0)
-      .map(s => <StopListItem key={s.id} stop={s} />);
+    stops = stops.map(s => <StopListItem key={s.id} stop={s} />);
     if (!stops.length) {
       return "Sorry, no buses are running near you. Better start walking or call an Uber.";
     }
