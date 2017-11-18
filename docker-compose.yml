@@ -1,50 +1,28 @@
 version: '3.3'
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile-api
-    command:
-      - "CompileDaemon"
-      - "-exclude-dir=.git"
-      - "-exclude-dir=node_modules"
-      - "-exclude-dir=web"
-      - "-graceful-kill=true"
-      - "-build=go build -o /go/bin/trimetric github.com/bsdavidson/trimetric/cmd/trimetric"
-      - "-command=/go/bin/trimetric --migrate=true"
     depends_on:
       - influxdb
       - kafka
       - postgres
       - redis
-    image: trimetric-api
+    image: bsdavidson/trimetric
     ports:
       - "8181:80"
+    restart: always
     secrets:
+      - postgres-password
       - trimet-api-key
-    volumes:
-      - .:/go/src/github.com/bsdavidson/trimetric
-    working_dir: /go/src/github.com/bsdavidson/trimetric
-
-  chronograf:
-    image: chronograf:alpine
-    depends_on:
-      - influxdb
-    ports:
-      - "8888:8888"
-    volumes:
-      - chronograf:/var/lib/chronograf
-    command:
-      - "--influxdb-url=http://influxdb:8086"
 
   influxdb:
     image: influxdb:alpine
+    env_file:
+      - ./secrets/influxdb.env
     environment:
-      INFLUXDB_DB: trimetric
-      INFLUXDB_USER: trimetric
-      INFLUXDB_USER_PASSWORD: example
-    ports:
-      - "8086:8086"
+      - INFLUXDB_DB=trimetric
+      - INFLUXDB_HTTP_LOG_ENABLED=false
+      - INFLUXDB_USER=trimetric
+    restart: always
     volumes:
       - influxdb:/var/lib/influxdb
 
@@ -54,11 +32,10 @@ services:
     depends_on:
       - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_ADVERTISED_PORT: 9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    ports:
-      - "9092:9092"
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_PORT=9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - kafka:/kafka
@@ -66,38 +43,25 @@ services:
   postgres:
     image: mdillon/postgis
     environment:
-      POSTGRES_USER: trimetric
-      POSTGRES_PASSWORD: example
-    ports:
-      - "5432:5432"
+      - POSTGRES_USER=trimetric
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres-password
+    restart: always
+    secrets:
+      - postgres-password
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
-
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile-web
-    command: ["yarn", "run", "watch"]
-    depends_on:
-      - api
-    image: trimetric-web
-    ports:
-      - "8080:8080"
-      - "9876:9876"
-    volumes:
-      - ./web:/opt/trimetric/web
+    restart: always
 
   zookeeper:
     image: zookeeper
-    ports:
-      - "2181:2181"
+    restart: always
 
 secrets:
+  postgres-password:
+    file: ./secrets/postgres-password
   trimet-api-key:
     file: ./secrets/trimet-api-key
 

@@ -20,6 +20,7 @@ const apiKeyPath = "/run/secrets/trimet-api-key"
 
 func main() {
 	addr := flag.String("addr", ":80", "Address to bind to")
+	debug := flag.Bool("debug", false, "Turns on pprof and additional logging")
 	webPath := flag.String("web-path", "./web/dist", "Path to website assets")
 	pgUser := flag.String("pg-user", "trimetric", "Postgres username")
 	pgPassword := flag.String("pg-password", "example", "Postgres password")
@@ -30,10 +31,14 @@ func main() {
 	redisAddr := flag.String("redis-addr", "redis:6379", "Redis address")
 	influxURL := flag.String("influx-url", "http://influxdb:8086", "InfluxDB URL")
 	influxUser := flag.String("influx-user", "trimetric", "InfluxDB username")
-	influxPassword := flag.String("influx-password", "example", "InfluxDB password")
+	influxPassword := flag.String("influx-password", "", "InfluxDB password")
 	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Kafka broker address")
 
 	flag.Parse()
+
+	if *influxPassword == "" {
+		*influxPassword = os.Getenv("INFLUXDB_USER_PASSWORD")
+	}
 
 	log.SetFlags(log.Lshortfile)
 
@@ -72,7 +77,7 @@ func main() {
 		cancel()
 	}()
 
-	if err := trimetric.Run(ctx, cancel, *addr, apiKey, db, influxClient, *kafkaAddr, *redisAddr, *webPath); err != nil {
+	if err := trimetric.Run(ctx, cancel, *debug, *addr, apiKey, db, influxClient, *kafkaAddr, *redisAddr, *webPath); err != nil {
 		log.Fatal(err)
 	}
 

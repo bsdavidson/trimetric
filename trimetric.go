@@ -75,7 +75,7 @@ func MigrateDB(db *sql.DB, path string, migrate bool) error {
 }
 
 // Run starts all the processes for Trimetric.
-func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db *sql.DB, influxClient client.Client, kafkaAddr, redisAddr, webPath string) error {
+func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKey string, db *sql.DB, influxClient client.Client, kafkaAddr, redisAddr, webPath string) error {
 	vds := &logic.VehicleSQLDataset{DB: db}
 	sds := &logic.StopSQLDataset{DB: db}
 	lds := &logic.LoaderSQLDataset{DB: db}
@@ -129,15 +129,28 @@ func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db
 		logic.PollGTFSData(ctx, lds, redisPool, 24*time.Hour)
 	}()
 
-	srv := &http.Server{Addr: addr, Handler: http.DefaultServeMux}
-	http.HandleFunc("/api/v1/vehicles", api.HandleVehiclePositions(vds))
-	http.HandleFunc("/api/v1/trimet/arrivals", api.HandleTrimetArrivals(apiKey))
-	http.HandleFunc("/api/v1/arrivals", api.HandleArrivals(sds))
-	http.HandleFunc("/api/v1/stops", api.HandleStops(sds))
-	http.HandleFunc("/api/v1/trip", api.HandleTripUpdates(tuds))
-	http.HandleFunc("/api/ws", api.HandleWSVehicles(vds, updateChan))
-	http.Handle("/", http.FileServer(http.Dir(webPath)))
-	log.Printf("Serving requests on %s", addr)
+	var debugSrv *http.Server
+	if debug {
+		log.Println("debug listening on :9876")
+		debugSrv = &http.Server{Addr: ":9876", Handler: http.DefaultServeMux}
+		go func() {
+			if err := debugSrv.ListenAndServe(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/vehicles", api.HandleVehiclePositions(vds))
+	mux.HandleFunc("/api/v1/trimet/arrivals", api.HandleTrimetArrivals(apiKey))
+	mux.HandleFunc("/api/v1/arrivals", api.HandleArrivals(sds))
+	mux.HandleFunc("/api/v1/stops", api.HandleStops(sds))
+	mux.HandleFunc("/api/v1/trip", api.HandleTripUpdates(tuds))
+	mux.HandleFunc("/api/ws", api.HandleWSVehicles(vds, updateChan))
+	mux.Handle("/", http.FileServer(http.Dir(webPath)))
+	srv := &http.Server{Addr: addr, Handler: mux}
+	log.Printf("serving requests on %s", addr)
 
 	go func() {
 		<-ctx.Done()
@@ -145,6 +158,11 @@ func Run(ctx context.Context, cancel context.CancelFunc, addr, apiKey string, db
 		defer cancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			log.Println(err)
+		}
+		if debugSrv != nil {
+			if err := debugSrv.Shutdown(shutdownCtx); err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 
