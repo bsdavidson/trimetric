@@ -76,7 +76,10 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.Veh
 	if err := rows.Err(); err != nil {
 		return nil, errors.WithStack(err)
 	}
-	// log.Printf("Retrieved %v vehicles from DB\n", len(vehicles))
+	if vehicles == nil {
+		vehicles = []trimet.VehiclePosition{}
+	}
+
 	return vehicles, nil
 }
 
@@ -168,7 +171,6 @@ func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient cl
 				continue
 			}
 
-			lastQueryTime = (queryTime.Unix() * 1000)
 			// log.Printf("Retrieved %d vehicles at %v\n", len(vehicles), lastQueryTime)
 			var b bytes.Buffer
 			enc := gob.NewEncoder(&b)
@@ -201,6 +203,8 @@ func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient cl
 				}
 
 				producer.Input() <- &sarama.ProducerMessage{Topic: vehiclePositionsTopic, Value: sarama.ByteEncoder(b.Bytes())}
+				lastQueryTime = (queryTime.Unix() * 1000)
+
 			}
 		}
 	}

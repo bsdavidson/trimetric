@@ -36,7 +36,18 @@ $yellow-light: #f1c40f;
 // viewport into two panels side by side. The left panel is used for
 // interactive content, and the right one is used to display the map.
 
+@mixin panel-short-left {
+  background: rgba($background-dark, 0.9);
+  left: 20px;
+  overflow-y: scroll;
+  position: absolute;
+  top: 20px;
+  width: 400px;
+  z-index: 2;
+}
+
 @mixin panel-wide-left {
+  background: rgba($background-dark, 0.9);
   bottom: 20px;
   left: 20px;
   overflow-y: scroll;
@@ -44,7 +55,6 @@ $yellow-light: #f1c40f;
   top: 20px;
   width: 400px;
   z-index: 2;
-  background: rgba($background-dark, 0.9);
 }
 
 @mixin panel-wide-right {
@@ -62,6 +72,7 @@ $yellow-light: #f1c40f;
 
 @mixin panel-narrow-bottom {
   bottom: 0;
+  box-sizing: border-box;
   left: 0;
   overflow-y: scroll;
   position: absolute;
@@ -71,6 +82,7 @@ $yellow-light: #f1c40f;
 
 @mixin panel-narrow-top {
   bottom: 50%;
+  box-sizing: border-box;
   left: 0;
   position: absolute;
   top: 0;
@@ -99,8 +111,10 @@ body {
   background: #34495e;
   font-size: 17px;
   line-height: 1.2;
-  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  font-family: "Roboto", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
+
+@import url("https://fonts.googleapis.com/css?family=Allerta+Stencil|Roboto:300,300i,500,500i,700,700i");
 
 @import "./src/components/app.scss";
 @import "./src/components/arrival_list.scss";

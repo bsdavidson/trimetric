@@ -38,7 +38,6 @@ const location = PropTypes.shape({
 const locationClicked = PropTypes.object;
 
 const stop = PropTypes.shape({
-  arrivals: arrivals,
   name: PropTypes.string.isRequired,
   lat: PropTypes.number.isRequired,
   lng: PropTypes.number.isRequired,

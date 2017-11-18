@@ -6,6 +6,7 @@ import DeckGL, {GeoJsonLayer, IconLayer} from "deck.gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import {DEFAULT_ZOOM} from "../store";
+import {LocationTypes} from "../actions";
 import {TrimetricPropTypes} from "./prop_types";
 
 const IconMapping = {
@@ -75,7 +76,8 @@ class MapBox extends Component {
     this.handleViewportChange({
       latitude: nextProps.locationClicked.lat,
       longitude: nextProps.locationClicked.lng,
-      zoom: 19,
+      zoom:
+        nextProps.locationClicked.locationType === LocationTypes.HOME ? 17 : 19,
       transitionInterpolator: experimental.viewportFlyToInterpolator,
       transitionDuration: 1200
     });

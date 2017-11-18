@@ -12,7 +12,7 @@ trimet.start();
 
 window.addEventListener("load", () => {
   ReactDOM.render(
-    render(store, {Router: BrowserRouter}),
+    render(store, trimet.handleStopChange, {Router: BrowserRouter}),
     document.getElementById("app")
   );
 });

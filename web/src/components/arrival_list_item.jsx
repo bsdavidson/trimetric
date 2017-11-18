@@ -25,7 +25,9 @@ export class ArrivalListItem extends React.Component {
     if (window) {
       window.scrollTo(0, 0);
     }
-
+    if (!this.props.arrival.vehicle_id) {
+      return;
+    }
     this.props.onVehicleClick(LocationTypes.VEHICLE, this.props.arrival);
   }
 
@@ -43,6 +45,18 @@ export class ArrivalListItem extends React.Component {
       backgroundColor: this.props.color
     };
 
+    let travelInfo = null;
+    if (this.props.arrival.vehicle_id) {
+      travelInfo = (
+        <div className="arrival-metric arrival-direction">
+          Traveling:{" "}
+          {degreeToCompass(this.props.arrival.vehicle_position.bearing)}
+        </div>
+      );
+    } else {
+      travelInfo = <div className="arrival-metric arrival-direction">n/a</div>;
+    }
+
     return (
       <div
         className={"arrival-list-item " + routeClass}
@@ -51,15 +65,15 @@ export class ArrivalListItem extends React.Component {
           {this.props.arrival.route_id}
         </div>
         <div className="arrival-name-metrics">
-          <div className="arrival-name">{this.props.arrival.headsign}</div>
+          <div className="arrival-name">
+            {this.props.arrival.vehicle_label || this.props.arrival.headsign}
+          </div>
           <div className="arrival-metrics">
             <div className="arrival-metric arrival-est-time">
               {this.props.arrivalTime}
             </div>
-            <div className="arrival-metric arrival-direction">
-              Traveling:{" "}
-              {degreeToCompass(this.props.arrival.vehicle_position.bearing)}
-            </div>
+
+            {travelInfo}
           </div>
         </div>
       </div>

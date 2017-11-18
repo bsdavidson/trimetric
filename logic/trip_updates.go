@@ -63,8 +63,6 @@ func ProduceTripUpdates(ctx context.Context, apiKey string, influxClient client.
 				log.Println(err)
 				continue
 			}
-			log.Printf("received %d trip updates", len(tripUpdates))
-
 			var b bytes.Buffer
 			enc := gob.NewEncoder(&b)
 
@@ -282,6 +280,5 @@ func (tuds *TripUpdateSQLDataset) UpdateTripUpdates(tus []trimet.TripUpdate) err
 	if err := tx.Commit(); err != nil {
 		return rollbackError(tx.Rollback(), err)
 	}
-	log.Printf("wrote %d trip updates", len(tus))
 	return nil
 }

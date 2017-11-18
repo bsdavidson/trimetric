@@ -2,9 +2,11 @@ import React from "react";
 import PropTypes from "prop-types";
 import {hashHistory, withRouter, Link} from "react-router-dom";
 import {connect} from "react-redux";
+import moment from "moment";
 
 import {TrimetricPropTypes} from "./prop_types";
 import ArrivalListItem from "./arrival_list_item";
+import Header from "./header";
 import {updateLocation, LocationTypes} from "../actions";
 import {buildQuery} from "../helpers/http";
 import {formatEstimate} from "../helpers/times";
@@ -39,11 +41,18 @@ export class ArrivalList extends React.Component {
   }
 
   render() {
-    let items = this.props.stop.arrivals.map((a, idx) => {
+    let {arrivals, stop} = this.props;
+    if (!arrivals) {
+      return null;
+    }
+    let items = arrivals.map((a, idx) => {
+      let arrivalTime = moment(a.date, "YYYY-MM-DD")
+        .add(moment.duration(a.arrival_time))
+        .valueOf();
       return (
         <ArrivalListItem
           arrival={a}
-          arrivalTime={formatEstimate(a.estimated)}
+          arrivalTime={formatEstimate(arrivalTime)}
           color={colorMap.getColorForKey(a.route_id)}
           key={idx}
         />
@@ -62,18 +71,20 @@ export class ArrivalList extends React.Component {
 
     return (
       <div className="arrival-list">
+        <Header />
         <Link className="back-button" to="/">
           <span className="fui-triangle-left-large" /> Back
         </Link>
+        <span
+          className="arrival-list-directions"
+          onClick={this.handleDirectionsClick}>
+          Get Directions
+        </span>
+
         <h3
           className="arrival-list-description"
           onClick={this.handleRouteNameClick}>
-          {this.props.stop.name}
-          <span
-            className="arrival-list-directions"
-            onClick={this.handleDirectionsClick}>
-            Get Directions
-          </span>
+          {stop.name}
         </h3>
 
         <div className="arrival-list-items">{items}</div>
@@ -100,7 +111,8 @@ function mapDispatchToProps(dispatch) {
 
 function mapStateToProps(state) {
   return {
-    location: state.location
+    location: state.location,
+    arrivals: state.arrivals
   };
 }
 

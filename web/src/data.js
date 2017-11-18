@@ -4,7 +4,7 @@ import "whatwg-fetch";
 import fetchPonyfill from "fetch-ponyfill";
 import moment from "moment";
 
-import {updateData, updateLocation} from "./actions";
+import {LocationTypes, updateData, updateLocation} from "./actions";
 import {buildQuery} from "./helpers/http";
 
 const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
@@ -49,63 +49,50 @@ export class Trimet {
     this.fetch = _fetch;
     this.running = false;
     this.timeoutID = null;
+    this.selectedStopID = null;
+
+    this.handleStopChange = this.handleStopChange.bind(this);
+  }
+
+  handleStopChange(stop) {
+    if (stop) {
+      this.selectedStopID = stop;
+      this.store.dispatch(
+        updateLocation(LocationTypes.STOP, stop.id, stop.lat, stop.lng, false)
+      );
+    } else {
+      this.selectedStopID = null;
+    }
   }
 
   fetchStops(lat, lng, bbox) {
-    this.fetchStopsID++;
-    let id = this.fetchStopsID;
-
-    if (
-      this.stopsCache.lat === lat &&
-      this.stopsCache.lng === lng &&
-      (bbox &&
-        this.stopsCache.bbox.sw.lat === bbox.sw.lat &&
-        this.stopsCache.bbox.sw.lng === bbox.sw.lng &&
-        this.stopsCache.bbox.ne.lat === bbox.ne.lat &&
-        this.stopsCache.bbox.ne.lng === bbox.ne.lng)
-    ) {
+    //
+    if (this.stopsCache.stops) {
       return Promise.resolve(this.stopsCache.stops);
     }
 
-    let stopsAPIURL =
-      API_ENDPOINTS.stops +
-      "?" +
-      buildQuery({
-        lat: lat,
-        lng: lng,
-        distance: 200,
-        south: bbox.sw.lat,
-        west: bbox.sw.lng,
-        north: bbox.ne.lat,
-        east: bbox.ne.lng
-      });
-    return this.fetch(stopsAPIURL)
+    return this.fetch(API_ENDPOINTS.stops)
       .then(response => response.json())
       .then(data => {
-        if (id === this.fetchStopsID) {
-          this.stopsCache = {
-            lat: lat,
-            lng: lng,
-            bbox: bbox,
-            stops: data.stops
-          };
-        }
+        this.stopsCache = {
+          stops: data.stops
+        };
+
         return data.stops;
       });
   }
 
   // FIXME: Add protection against no returned Stops.
-  fetchArrivals(stops) {
-    if (!stops) {
-      throw new Error("no stops");
+  fetchArrivals(stop) {
+    if (!stop) {
+      throw new Error("stop is required");
     }
-    let locations = stops.map(location => +location.id);
 
     let arrivalsAPIURL =
       API_ENDPOINTS.arrivals +
       "?" +
       buildQuery({
-        locIDs: locations.join(",")
+        locIDs: stop.id
       });
     return this.fetch(arrivalsAPIURL).then(response => response.json());
   }
@@ -117,37 +104,16 @@ export class Trimet {
   }
 
   fetchData(lat, lng, bbox) {
-    return Promise.all([
-      this.fetchStops(lat, lng, bbox),
-      this.fetchVehicles()
-    ]).then(results => {
-      let [stops, vehicles] = results;
+    let promises = [this.fetchStops(), this.fetchVehicles()];
+    if (this.selectedStopID) {
+      promises.push(this.fetchArrivals(this.selectedStopID));
+    }
 
-      stops.forEach(s => {
-        s.arrivals = [];
-      });
+    return Promise.all(promises).then(results => {
+      let [stops, vehicles, arrivals] = results;
 
-      return {stops, vehicles};
+      return {stops, vehicles, arrivals: arrivals || []};
     });
-
-    // let stops, arrivals;
-    // return this.fetchStops(lat, lng, bbox)
-    //   .then(s => {
-    //     stops = s;
-    //     return this.fetchArrivals(s);
-    //   })
-    //   .then(a => {
-    //     arrivals = a;
-    //     return this.fetchVehicles();
-    //   })
-    //   .then(vehicles => ({
-    //     stops,
-    //     arrivals,
-    //     vehicles
-    //   }))
-    //   .then(data => {
-    //     return combineResponses(data.stops, data.arrivals, data.vehicles);
-    //   });
   }
 
   start() {
@@ -218,7 +184,13 @@ export class Trimet {
           );
 
         this.store.dispatch(
-          updateData(data.stops, data.vehicles, geoJsonData, iconData)
+          updateData(
+            data.stops,
+            data.vehicles,
+            data.arrivals,
+            geoJsonData,
+            iconData
+          )
         );
         let lc = this.store.getState().locationClicked;
         if (lc) {
@@ -248,35 +220,4 @@ export class Trimet {
         throw err;
       });
   }
-}
-
-export function combineResponses(stops, arrivals, vehicles) {
-  if (!stops) {
-    stops = [];
-  }
-  if (!arrivals) {
-    arrivals = [];
-  }
-  if (!vehicles) {
-    vehicles = [];
-  }
-
-  let newStops = stops.map(stop => {
-    let newStop = Object.assign({}, stop);
-    newStop.arrivals = arrivals
-      .filter(a => a.stop_id === newStop.id) // && a.feet)
-      .map(arrival => {
-        return Object.assign({}, arrival, {
-          estimated: moment(arrival.date, "YYYY-MM-DD")
-            .add(moment.duration(arrival.arrival_time))
-            .valueOf(),
-          feet: 123
-        });
-      });
-    return newStop;
-  });
-  return {
-    stops: newStops,
-    vehicles: vehicles
-  };
 }

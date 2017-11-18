@@ -30,6 +30,7 @@ type StopWithDistance struct {
 
 // StopDataset provides methods to query and update a database table of Stops
 type StopDataset interface {
+	FetchAllStops() ([]StopWithDistance, error)
 	FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error)
 	FetchWithinBox(w, s, e, n string) ([]StopWithDistance, error)
 	FetchArrivals(stopIDs []string) ([]Arrival, error)
@@ -41,6 +42,37 @@ type StopSQLDataset struct {
 	DB *sql.DB
 }
 
+// FetchAllStops ...
+func (sd *StopSQLDataset) FetchAllStops() ([]StopWithDistance, error) {
+	q := `
+		SELECT
+			id, code, name, "desc", lat_lon, zone_id, url, location_type,
+			parent_station, direction, position
+		FROM stops
+	`
+	rows, err := sd.DB.Query(q)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	defer rows.Close()
+	stops := []StopWithDistance{}
+
+	for rows.Next() {
+		var s StopWithDistance
+		var lonLat postgis.PointS
+		err := rows.Scan(
+			&s.ID, &s.Code, &s.Name, &s.Desc, &lonLat, &s.ZoneID, &s.URL,
+			&s.LocationType, &s.ParentStation, &s.Direction, &s.Position)
+		if err != nil {
+			return nil, err
+		}
+		s.Lat = lonLat.Y
+		s.Lon = lonLat.X
+		stops = append(stops, s)
+	}
+	return stops, nil
+}
+
 // FetchWithinDistance takes a point (lat,lng) and finds all stops located within 'dist'.
 // It uses the PostGIS extension to calculate the distance to stops stored in the DB.
 func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWithDistance, error) {
@@ -49,7 +81,7 @@ func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWith
 			id, code, name, "desc", lat_lon, zone_id, url, location_type,
 			parent_station, direction, position,
 			ST_Distance(ST_GeogFromText($1), lat_lon) as distance,
-	 FROM stops
+		FROM stops
 		WHERE ST_DWithin(ST_GeogFromText($1), lat_lon, $2)
 		ORDER BY distance ASC
 	`
@@ -148,7 +180,7 @@ func parseDuration(s string) (*time.Duration, error) {
 	return &dur, nil
 }
 
-// FetchArrivals ...
+// FetchArrivals returns a list of arrivals by combining multiple data sets.
 func (sd *StopSQLDataset) FetchArrivals(stopIDs []string) ([]Arrival, error) {
 	var err error
 	q := `
@@ -160,7 +192,12 @@ func (sd *StopSQLDataset) FetchArrivals(stopIDs []string) ([]Arrival, error) {
 		FROM routes r
 		JOIN trips t ON t.route_id = r.id
 		JOIN stop_times st ON st.trip_id = t.id
-		LEFT JOIN vehicle_positions v ON v.trip_id = t.id
+		LEFT JOIN (
+			SELECT
+			DISTINCT ON (trip_id) vehicle_id, trip_id, position_lon_lat, position_bearing, vehicle_label
+			FROM vehicle_positions
+			ORDER BY trip_id, vehicle_id ASC
+		) v ON v.trip_id = t.id
 		JOIN calendar_dates cd ON cd.service_id = t.service_id
 		WHERE st.stop_id = ANY($1) AND ((
 			cd.date = (now() AT TIME ZONE 'America/Los_Angeles')::date AND

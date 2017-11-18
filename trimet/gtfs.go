@@ -2,6 +2,7 @@ package trimet
 
 import (
 	"archive/zip"
+	"bytes"
 	"database/sql/driver"
 	"encoding/csv"
 	"fmt"
@@ -370,6 +371,25 @@ func ReadGTFSCSV(filename string) (*CSV, error) {
 	return &CSV{cr: cr}, nil
 }
 
+func getLines(r io.Reader) (int, error) {
+	buf := make([]byte, 32*1024)
+	count := 0
+	lineSep := []byte{'\n'}
+
+	for {
+		c, err := r.Read(buf)
+		count += bytes.Count(buf[:c], lineSep)
+
+		switch {
+		case err == io.EOF:
+			return count, nil
+
+		case err != nil:
+			return count, err
+		}
+	}
+}
+
 // ReadZippedGTFSCSV opens a GTFS.zip file and extracts fileName as a CSV
 // object.
 func ReadZippedGTFSCSV(z *zip.ReadCloser, fileName string) (*CSV, error) {
@@ -384,7 +404,10 @@ func ReadZippedGTFSCSV(z *zip.ReadCloser, fileName string) (*CSV, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	cr := csv.NewReader(rc)
+
 	cr.ReuseRecord = true
 	return &CSV{rc: rc, cr: cr}, nil
+
 }

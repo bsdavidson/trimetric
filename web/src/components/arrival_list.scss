@@ -1,11 +1,13 @@
 .arrival-list {
   @include panel-wide-left;
   border-radius: 4px;
+  padding: 20px 10px;
 
   .back-button {
     @include button;
     font-size: 0.8rem;
     left: 0.6em;
+    margin-top: -0.4em;
     padding-right: 0.9em;
     position: relative;
     text-decoration: none;
@@ -17,15 +19,15 @@
     clear: left;
     cursor: pointer;
     margin-top: 3em;
-
-    .arrival-list-directions {
-      @include button;
-      font-size: 0.8rem;
-      padding-top: 0.5rem;
-      position: absolute;
-      right: 0.6rem;
-      top: 0.1rem;
-    }
+  }
+  .arrival-list-directions {
+    @include button;
+    float: none;
+    font-size: 0.8rem;
+    margin-top: -0.4em;
+    padding-top: 0.5rem;
+    position: absolute;
+    right: 1.5em;
   }
 }
 
@@ -40,8 +42,8 @@
 
   .arrival-list-none {
     color: $foreground-light;
-    padding: 0.8em;
     font-size: 1.1em;
+    padding: 0.8em;
   }
 
   .arrival-list-item {

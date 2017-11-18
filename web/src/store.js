@@ -26,7 +26,16 @@ const DEFAULT_BOUNDING_BOX = {
   }
 };
 
-export const DEFAULT_ZOOM = 16;
+export const DEFAULT_ZOOM = 11;
+
+function arrivals(state = [], action) {
+  switch (action.type) {
+    case UPDATE_DATA:
+      return action.arrivals;
+    default:
+      return state;
+  }
+}
 
 function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
   switch (action.type) {
@@ -73,6 +82,15 @@ function locationClicked(state = null, action) {
   }
 }
 
+function clickedStop(state = null, action) {
+  switch (action.type) {
+    case UPDATE_LOCATION:
+      return action.clickedStop;
+    default:
+      return state;
+  }
+}
+
 function stops(state = [], action) {
   switch (action.type) {
     case UPDATE_DATA:
@@ -101,6 +119,7 @@ function zoom(state = DEFAULT_ZOOM, action) {
 }
 
 export const reducer = combineReducers({
+  arrivals,
   boundingBox,
   geoJsonData,
   iconData,

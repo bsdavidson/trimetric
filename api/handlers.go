@@ -11,7 +11,6 @@ import (
 	"github.com/bsdavidson/trimetric/logic"
 	"github.com/bsdavidson/trimetric/trimet"
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 )
 
 func httpError(w http.ResponseWriter, prefix string, err error, code int) {
@@ -54,23 +53,26 @@ func HandleStops(sd logic.StopDataset) http.HandlerFunc {
 		east := r.URL.Query().Get("east")
 		west := r.URL.Query().Get("west")
 
-		if lat == "" {
-			httpError(w, "HandleStops:", errors.New("Latitude cannot be blank"), http.StatusBadRequest)
-			return
-		}
-		if lng == "" {
-			httpError(w, "HandleStops:", errors.New("Longitude cannot be blank"), http.StatusBadRequest)
-			return
-		}
-		if dist == "" {
-			httpError(w, "HandleStops:", errors.New("Distance cannot be blank"), http.StatusBadRequest)
-			return
-		}
-
-		stops, err := sd.FetchWithinBox(west, south, east, north)
-		if err != nil {
-			httpError(w, "HandleStops:", err, http.StatusInternalServerError)
-			return
+		var stops []logic.StopWithDistance
+		var err error
+		if south != "" && north != "" && east != "" && west != "" {
+			stops, err = sd.FetchWithinBox(west, south, east, north)
+			if err != nil {
+				httpError(w, "HandleStops:", err, http.StatusInternalServerError)
+				return
+			}
+		} else if lat != "" && lng != "" && dist != "" {
+			stops, err = sd.FetchWithinDistance(lat, lng, dist)
+			if err != nil {
+				httpError(w, "HandleStops:", err, http.StatusInternalServerError)
+				return
+			}
+		} else {
+			stops, err = sd.FetchAllStops()
+			if err != nil {
+				httpError(w, "HandleStops:", err, http.StatusInternalServerError)
+				return
+			}
 		}
 
 		b, err := json.Marshal(stopsWithDistanceResponse{Stops: stops})

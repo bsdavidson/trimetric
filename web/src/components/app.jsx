@@ -1,10 +1,10 @@
 import React, {Component} from "react";
 import ReactCSSTransitionGroup from "react-addons-css-transition-group";
-import moment from "moment";
 import {Marker} from "react-map-gl";
 import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
 
+import Info from "./info";
 import ArrivalList from "./arrival_list";
 import Map from "./map";
 import StopList from "./stop_list";
@@ -17,6 +17,8 @@ class App extends Component {
       mapWidth: 1,
       mapHeight: 1
     };
+
+    this.selectedStop = null;
 
     this.handleResize = this.handleResize.bind(this);
   }
@@ -38,22 +40,39 @@ class App extends Component {
     });
   }
 
+  componentWillReceiveProps(nextProps) {
+    let newStopID =
+      (nextProps.match &&
+        nextProps.match.params &&
+        nextProps.match.params.stopID) ||
+      null;
+    let selectedStopID = this.selectedStop ? this.selectedStop.id : null;
+
+    if (!newStopID) {
+      this.selectedStop = null;
+    }
+
+    if (newStopID !== selectedStopID) {
+      this.selectedStop = this.props.stops.find(s => s.id == newStopID);
+      this.props.onStopChange(this.selectedStop);
+    }
+  }
+
   render() {
-    let {location, stops, queryTime} = this.props;
+    let {location, stops} = this.props;
+
     if (!stops) {
       return <div>No stops</div>;
     }
-    let stopID;
-    if (this.props.match && this.props.match.params) {
-      stopID = this.props.match.params.stopID;
-    }
-    let stop = stops.find(s => s.id == stopID);
+
     let page;
     let markers = [];
-    if (stop) {
-      page = <ArrivalList stop={stop} />;
+    if (this.selectedStop && this.props.zoom > 15.5) {
+      page = <ArrivalList key="transition-stops" stop={this.selectedStop} />;
     } else if (this.props.zoom > 15.5) {
-      page = <StopList stops={stops} />;
+      page = <StopList key="transition-stops" stops={stops} />;
+    } else {
+      page = <Info key="transition-info" />;
     }
 
     markers.push(
@@ -69,11 +88,6 @@ class App extends Component {
 
     return (
       <div className="app">
-        <nav>
-          <div className="app-query-time">
-            Updated: {moment(queryTime).format("h:mm:ss a")}
-          </div>
-        </nav>
         <Map
           onViewportChange={this.props.onViewportChange}
           width={this.state.mapWidth}

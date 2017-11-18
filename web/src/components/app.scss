@@ -28,7 +28,91 @@
   }
 }
 
+.header {
+  width: 100%;
+  padding-bottom: 1em;
+  border-bottom: 1px solid $foreground-dark;
+  margin-bottom: 1em;
+  .header-title {
+    color: $foreground-light;
+    padding-left: 0.1em;
+    font-family: "Allerta Stencil";
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 4.3em;
+    font-weight: normal;
+    text-transform: lowercase;
+  }
+  .header-metrics {
+    color: $foreground-light;
+    padding-left: 1em;
+  }
+}
+
+.info {
+  @include panel-short-left();
+  padding: 20px 10px;
+  border-radius: 4px;
+  .info-text {
+    padding: 1em;
+    color: $foreground-light;
+    a {
+      color: $yellow-light;
+    }
+    .info-text-credits {
+      font-weight: 500;
+    }
+  }
+
+  .info-icons {
+    .info-icon {
+      display: inline-block;
+      width: 3.5em;
+      height: auto;
+      margin-left: 0.7em;
+      &.docker {
+        opacity: 0.8;
+      }
+      &.kafka {
+        width: 2em;
+        opacity: 0.8;
+      }
+      &.go {
+        width: 2.5em;
+      }
+      &.postgresql {
+        width: 3.2em;
+      }
+    }
+    .info-icons-text {
+      text-align: center;
+      font-size: 0.7em;
+      color: rgba($foreground-light, 0.5);
+      margin-bottom: 0.6em;
+    }
+  }
+}
+
 @media screen and (max-width: 639px) {
+  .info {
+    @include panel-narrow-bottom;
+    box-sizing: border-box;
+
+    .info-text {
+      margin-top: 0;
+      padding-top: 0;
+    }
+  }
+  .header {
+    .header-title {
+      font-size: 3em;
+      padding-left: 0.2em;
+    }
+    .header-metrics {
+      display: none;
+    }
+  }
+
   .app {
     .app-map {
       @include panel-narrow-top();
