@@ -49,6 +49,7 @@ services:
       - influxdb:/var/lib/influxdb
 
   kafka:
+    hostname: kafka
     image: wurstmeister/kafka:0.10.2.1
     depends_on:
       - zookeeper
@@ -60,10 +61,12 @@ services:
       - "9092:9092"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - kafka:/kafka
 
   postgres:
     image: mdillon/postgis
     environment:
+      POSTGRES_USER: trimetric
       POSTGRES_PASSWORD: example
     ports:
       - "5432:5432"
@@ -101,4 +104,5 @@ secrets:
 volumes:
   chronograf: {}
   influxdb: {}
+  kafka: {}
   pgdata: {}

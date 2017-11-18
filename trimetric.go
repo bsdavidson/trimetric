@@ -37,6 +37,7 @@ func OpenInfluxDB(host, username, password string) (client.Client, error) {
 		Addr:     host,
 		Username: username,
 		Password: password,
+		Timeout:  100 * time.Millisecond,
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)

@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE EXTENSION postgis;
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- This doesn't map to any file in the GTFS dump, but is here to provide
 -- a unique key for service_id to tie foreign keys to.

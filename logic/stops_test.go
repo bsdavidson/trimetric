@@ -10,7 +10,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
-	setupDb, err := sql.Open("postgres", "postgres://postgres:example@localhost:5432/?user=postgres&sslmode=disable")
+	setupDb, err := sql.Open("postgres", "postgres://trimetric:example@localhost:5432/?sslmode=disable")
 	require.NoError(t, err)
 	defer setupDb.Close()
 	require.NoError(t, setupDb.Ping())
@@ -20,7 +20,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 	setupDb.Close()
 
-	db, err := sql.Open("postgres", "postgres://postgres:example@localhost:5432/test_trimetric?user=postgres&sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://trimetric:example@localhost:5432/test_trimetric?sslmode=disable")
 	require.NoError(t, err)
 
 	require.NoError(t, goose.Up(db, "../migrations"))

@@ -153,7 +153,6 @@ func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient cl
 	})
 	if err != nil {
 		log.Println(err)
-		return errors.WithStack(err)
 	}
 	tags := map[string]string{"trimet_vehicle": "updated_count"}
 
@@ -178,15 +177,14 @@ func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient cl
 			fields := map[string]interface{}{
 				"count": len(vehicles),
 			}
+
 			pt, err := client.NewPoint("retrieved_vehicles", tags, fields, time.Now())
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 			bp.AddPoint(pt)
 			if err := influxClient.Write(bp); err != nil {
 				log.Println(err)
-				continue
 			}
 
 		VEHICLE:

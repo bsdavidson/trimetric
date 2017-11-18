@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/bsdavidson/trimetric"
 	_ "github.com/lib/pq"
@@ -19,7 +21,7 @@ const apiKeyPath = "/run/secrets/trimet-api-key"
 func main() {
 	addr := flag.String("addr", ":80", "Address to bind to")
 	webPath := flag.String("web-path", "./web/dist", "Path to website assets")
-	pgUser := flag.String("pg-user", "postgres", "Postgres username")
+	pgUser := flag.String("pg-user", "trimetric", "Postgres username")
 	pgPassword := flag.String("pg-password", "example", "Postgres password")
 	pgHost := flag.String("pg-host", "postgres", "Postgres hostname")
 	pgDatabase := flag.String("pg-database", "trimetric", "Postgres database")
@@ -41,14 +43,20 @@ func main() {
 	}
 	apiKey := strings.TrimSpace(string(b))
 
-	db, err := trimetric.OpenDB(fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", *pgUser, *pgPassword, *pgHost, *pgDatabase))
-	if err != nil {
-		log.Fatal(err)
+	var db *sql.DB
+	for {
+		db, err = trimetric.OpenDB(fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", *pgUser, *pgPassword, *pgHost, *pgDatabase))
+		if err == nil {
+			break
+		}
+		log.Println("error connecting to postgres:", err)
+		log.Println("retying in 1 second")
+		time.Sleep(time.Second)
 	}
 
 	influxClient, err := trimetric.OpenInfluxDB(*influxURL, *influxUser, *influxPassword)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("InfluxDB:", err)
 	}
 
 	if err := trimetric.MigrateDB(db, *migratePath, *migrate); err != nil {
