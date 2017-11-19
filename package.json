@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "build": "cd web && webpack",
-    "dist": "npm run build && cd web && rm -rf dist && mkdir dist && cp -Rv index.html robots.txt assets bundle.css bundle.js dist/",
+    "dist":
+      "npm run build && cd web && rm -rf dist && mkdir dist && cp -Rv index.html robots.txt assets bundle.css bundle.js dist/",
     "githooks-install": "precommit install",
     "githooks-remove": "precommit remove",
     "lint": "eslint web/src web/test --ext jsx",
-    "precommit": "npm run lint",
+    "precommit": "make lint",
     "start": "cd web/dist && http-server",
     "test": "cd web && karma start --single-run",
     "test-watch": "cd web && karma start",
@@ -27,6 +28,7 @@
     "babel-preset-react": "^6.5.0",
     "chai": "^4.1.2",
     "css-loader": "^0.28.7",
+    "deck.gl": "^4.1.5",
     "deep-equal": "^1.0.1",
     "enzyme": "^3.1.0",
     "enzyme-adapter-react-16": "^1.0.2",
@@ -49,6 +51,7 @@
     "karma": "^1.7.1",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.2.0",
+    "karma-clear-screen-reporter": "^1.0.0",
     "karma-coverage": "^1.1.1",
     "karma-mocha": "^1.0.1",
     "karma-mocha-reporter": "^2.0.4",
@@ -56,6 +59,7 @@
     "karma-nyan-reporter": "^0.2.4",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^2.0.5",
+    "luma.gl": "^4.0.5",
     "mocha": "^4.0.1",
     "moment": "^2.13.0",
     "node-sass": "^4.5.3",
@@ -73,6 +77,7 @@
     "redux": "^3.5.2",
     "redux-devtools": "^3.3.1",
     "sass-loader": "^6.0.6",
+    "sinon": "^4.1.2",
     "style-loader": "^0.19.0",
     "url-loader": "^0.6.2",
     "webpack": "^3.8.1",
@@ -83,18 +88,8 @@
   "directories": {
     "test": "test"
   },
-  "keywords": [
-    "reactjs",
-    "webpack",
-    "karma",
-    "mocha",
-    "chai"
-  ],
+  "keywords": ["reactjs", "webpack", "karma", "mocha", "chai"],
   "dependencies": {
-    "deck.gl": "^4.1.5",
-    "http-server": "^0.10.0",
-    "karma-clear-screen-reporter": "^1.0.0",
-    "luma.gl": "^4.0.5",
-    "sinon": "^4.1.2"
+    "http-server": "^0.10.0"
   }
 }

@@ -157,6 +157,17 @@ func parseDuration(s string) (*Time, error) {
 	return (*Time)(&dur), nil
 }
 
+func parseFloat(s string, defaultValue float64) (float64, error) {
+	if s == "" {
+		return defaultValue, nil
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	return f, nil
+}
+
 func parseInt(s string, defaultValue int) (int, error) {
 	if s == "" {
 		return defaultValue, nil
@@ -166,6 +177,18 @@ func parseInt(s string, defaultValue int) (int, error) {
 		return 0, errors.WithStack(err)
 	}
 	return n, nil
+}
+
+func parseNullableFloat(s string) (*float64, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &f, nil
 }
 
 func parseNullableInt(s string) (*int, error) {
@@ -262,50 +285,36 @@ func NewStopTimeFromRow(row []string) (*StopTime, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	if row[5] != "" {
-		s := row[5]
-		st.StopHeadsign = &s
+	st.StopHeadsign = parseNullableString(row[5])
+
+	st.PickupType, err = parseInt(row[6], 0)
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	if row[6] != "" {
-		st.PickupType, err = strconv.Atoi(row[6])
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	if row[7] != "" {
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+	st.DropOffType, err = parseInt(row[7], 0)
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	if row[8] != "" {
-		f, err := strconv.ParseFloat(row[8], 64)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		st.ShapeDistTraveled = &f
+	st.ShapeDistTraveled, err = parseNullableFloat(row[8])
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	if row[9] != "" {
-		n, err := strconv.Atoi(row[9])
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		st.Timepoint = &n
+	st.Timepoint, err = parseNullableInt(row[9])
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
-	if row[10] != "" {
-		st.ContinuousDropOff, err = strconv.Atoi(row[10])
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+	st.ContinuousDropOff, err = parseInt(row[10], 0)
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
-	if row[11] != "" {
-		st.ContinuousPickup, err = strconv.Atoi(row[11])
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+
+	st.ContinuousPickup, err = parseInt(row[11], 0)
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	return &st, nil

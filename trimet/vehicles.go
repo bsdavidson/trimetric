@@ -15,6 +15,7 @@ import (
 // RouteType indicates the type of vehicle serving the route
 type RouteType int
 
+// Defines the types of vehicles serving a route.
 const (
 	RouteTypeTram RouteType = iota
 	RouteTypeSubway
@@ -26,6 +27,7 @@ const (
 	RouteTypeFunicular
 )
 
+// VehiclePosition is the realtime position information for a given vehicle.
 type VehiclePosition struct {
 	Trip                TripDescriptor                         `json:"trip"`
 	Vehicle             VehicleDescriptor                      `json:"vehicle"`
@@ -39,14 +41,15 @@ type VehiclePosition struct {
 	RouteType           RouteType                              `json:"route_type"`
 }
 
-// VehicleDescriptor ...
+// VehicleDescriptor contains identification information for a vehicle
+// performing a trip.
 type VehicleDescriptor struct {
 	ID    *string `json:"id"`
 	Label *string `json:"label"`
 	// LicensePlate *string `json:"license_plate"`
 }
 
-// Position ...
+// Position is a geographic position of a vehicle.
 type Position struct {
 	Latitude  float32 `json:"lat"`
 	Longitude float32 `json:"lng"`
@@ -55,7 +58,7 @@ type Position struct {
 	Speed     float32 `json:"speed"`
 }
 
-// IsEqual ...
+// IsEqual returns true if the two vehicle positions are the same.
 func (pvp *VehiclePosition) IsEqual(cvp VehiclePosition) bool {
 
 	if pvp.Trip != cvp.Trip {

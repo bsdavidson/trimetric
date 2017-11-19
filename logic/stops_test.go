@@ -2,6 +2,8 @@ package logic
 
 import (
 	"database/sql"
+	"flag"
+	"fmt"
 	"testing"
 
 	"github.com/bsdavidson/trimetric/trimet"
@@ -10,8 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var postgresAddr string
+
+func init() {
+
+	flag.StringVar(&postgresAddr, "postgres-addr", "localhost:5432", "Address of a Postgres server")
+}
+
 func setupTestDB(t *testing.T) *sql.DB {
-	setupDb, err := sql.Open("postgres", "postgres://trimetric:example@localhost:5432/?sslmode=disable")
+	setupDb, err := sql.Open("postgres", fmt.Sprintf("postgres://trimetric:example@%s/?sslmode=disable", postgresAddr))
 	require.NoError(t, err)
 	defer setupDb.Close()
 	require.NoError(t, setupDb.Ping())
@@ -21,15 +30,14 @@ func setupTestDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 	setupDb.Close()
 
-	db, err := sql.Open("postgres", "postgres://trimetric:example@localhost:5432/test_trimetric?sslmode=disable")
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://trimetric:example@%s/test_trimetric?sslmode=disable", postgresAddr))
 	require.NoError(t, err)
-
 	require.NoError(t, goose.Up(db, "../migrations"))
 	return db
 }
 
 func loadStopFixtures(t *testing.T, db *sql.DB) *StopSQLDataset {
-	stops, err := trimet.ReadGTFSCSV("./fixtures/stops.txt")
+	stops, err := trimet.ReadGTFSCSV("./testdata/stops.txt")
 	require.NoError(t, err)
 
 	lds := LoaderSQLDataset{DB: db}

@@ -148,7 +148,7 @@ func (tuds *TripUpdateSQLDataset) FetchTripUpdates() ([]trimet.TripUpdate, error
 	}
 
 	// Because trip_updates contains references to stop_time_updates, we would
-	// be transferring a lot unecessary data if we queried them both with a JOIN.
+	// be transferring a lot unnecessary data if we queried them both with a JOIN.
 	// Instead, make two queries that are joined together after the fact. Because
 	// there is a race condition between the two selects, we must ensure that both
 	// queries see the same snapshot of the database.
@@ -193,6 +193,9 @@ func (tuds *TripUpdateSQLDataset) FetchTripUpdates() ([]trimet.TripUpdate, error
 		FROM stop_time_updates
 		ORDER BY index ASC
 	`)
+	if err != nil {
+		return nil, rollbackError(tx.Rollback(), err)
+	}
 
 	for rows.Next() {
 		var stu trimet.StopTimeUpdate

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // Import the pprof package to add the HTTP handlers
 	"strings"
 	"sync"
 	"time"

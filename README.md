@@ -4,9 +4,9 @@ Trimetric is a realtime visualization of the [Trimet] transit system in
 Portland, OR, using the [GTFS] feeds provided for developers by Trimet.
 
 It downloads the static GTFS feeds periodically and ingests them into the local
-[Postgres] database. Realtime GTFS data, such as vehicle position and trip
-updates, are polled and produced into [Kafka], where it is consumed by other
-workers.
+[Postgres] database, for querying later using PostGIS. Realtime GTFS data, such
+as vehicle position and trip updates, are polled and produced into [Kafka],
+where it is consumed by other workers.
 
 The front end is a responsive web app built in React and uses [Mapbox] and
 [deck.gl] for rendering the map and icon layers. When zoomed in, Trimetric shows
@@ -52,6 +52,17 @@ dependencies will be started automatically and the local directories will be
 mounted in the containers for easy development. The API and web app will be
 rebuilt automatically when you make changes. You can view the running web app in
 your browser by opening: http://localhost:8080
+
+
+### Testing
+
+There are tests for both Go and JavaScript. The Go tests require Postgres, so
+make sure the Docker Compose environment is running (with `docker-compose up`).
+Then run this command locally to both Go and JavaScript tests:
+
+```sh
+make test
+```
 
 
 [Trimet]: https://trimet.org

@@ -159,7 +159,7 @@ func HandleTripUpdates(tds logic.TripUpdatesDataset) http.HandlerFunc {
 	}
 }
 
-// HandleArrivals...
+// HandleArrivals returns a list of upcoming arrivals for a list of stops.
 func HandleArrivals(tds logic.StopDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

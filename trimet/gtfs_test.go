@@ -25,6 +25,7 @@ func TestTime(t *testing.T) {
 	require.NoError(t, testTime2.UnmarshalText(b))
 
 	dv, err := testTime2.Value()
+	require.NoError(t, err)
 	assert.Equal(t, "01:00:00", dv)
 
 }

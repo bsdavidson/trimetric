@@ -12,12 +12,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// StopTimeEvent contains timing information for a single predicted event.
 type StopTimeEvent struct {
 	Delay       *int32     `json:"delay"`
 	Time        *time.Time `json:"time"`
 	Uncertainty *int32     `json:"uncertainty"`
 }
 
+// StopTimeUpdate is a realtime update for arrival and/or departure events for a
+// given stop on a trip.
 type StopTimeUpdate struct {
 	StopSequence         *uint32                                              `json:"stop_sequence"`
 	StopID               *string                                              `json:"stop_id"`
@@ -26,6 +29,8 @@ type StopTimeUpdate struct {
 	ScheduleRelationship *gtfs.TripUpdate_StopTimeUpdate_ScheduleRelationship `json:"schedule_relationship"`
 }
 
+// TripDescriptor identifies an instance of a GTFS trip, or all instances of a
+// trip along a route.
 type TripDescriptor struct {
 	TripID  *string `json:"trip_id"`
 	RouteID *string `json:"route_id"`
@@ -35,7 +40,7 @@ type TripDescriptor struct {
 	// ScheduleRelationship *gtfs.TripDescriptor_ScheduleRelationship `json:"schedule_relationship"`
 }
 
-// TripUpdate ...
+// TripUpdate is a realtime update on the progress of a vehile along a trip.
 type TripUpdate struct {
 	Trip            TripDescriptor    `json:"trip"`
 	Vehicle         VehicleDescriptor `json:"vehicle"`
