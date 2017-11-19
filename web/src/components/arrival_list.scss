@@ -1,0 +1,116 @@
+.arrival-list {
+  @include panel-wide-left;
+  border-radius: 4px;
+  padding: 20px 10px;
+
+  .back-button {
+    @include button;
+    font-size: 0.8rem;
+    left: 0.6em;
+    margin-top: -0.4em;
+    padding-right: 0.9em;
+    position: relative;
+    text-decoration: none;
+    top: 0.1rem;
+  }
+
+  .arrival-list-description {
+    @include panel-title;
+    clear: left;
+    cursor: pointer;
+    margin-top: 3em;
+  }
+  .arrival-list-directions {
+    @include button;
+    float: none;
+    font-size: 0.8rem;
+    margin-top: -0.4em;
+    padding-top: 0.5rem;
+    position: absolute;
+    right: 1.5em;
+  }
+}
+
+@media screen and (max-width: 639px) {
+  .arrival-list {
+    @include panel-narrow-bottom;
+  }
+}
+
+.arrival-list-items {
+  margin-top: 1em;
+
+  .arrival-list-none {
+    color: $foreground-light;
+    font-size: 1.1em;
+    padding: 0.8em;
+  }
+
+  .arrival-list-item {
+    align-items: center;
+    background: $foreground-light;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5em;
+    overflow: hidden;
+
+    &.active {
+      background: $background-dark;
+      color: $foreground-light;
+    }
+
+    &:hover {
+      background: $foreground-dark;
+    }
+
+    .arrival-id {
+      color: $foreground-light;
+      display: inline-block;
+      font-size: 1.5em;
+      font-weight: bold;
+      padding: 0.5em 0.4em 0.4em;
+      text-align: center;
+      width: 4em;
+    }
+
+    .arrival-name-metrics {
+      position: relative;
+      width: 100%;
+    }
+
+    .arrival-name {
+      font-size: 1em;
+      left: 0.5em;
+      overflow: hidden;
+      position: absolute;
+      right: 0.5em;
+      text-overflow: ellipsis;
+      top: -1.1em;
+      white-space: nowrap;
+    }
+
+    .arrival-metrics {
+      color: darken($foreground-dark, 10%);
+      display: flex;
+      font-size: 0.8em;
+      left: 0.7em;
+      position: absolute;
+      right: 0.7em;
+      text-align: left;
+      top: 0.2em;
+
+      .arrival-metric {
+        display: inline-block;
+        text-align: left;
+        width: auto;
+      }
+      .arrival-est-time {
+        width: 100%;
+      }
+      .arrival-direction {
+        white-space: nowrap;
+      }
+    }
+  }
+}

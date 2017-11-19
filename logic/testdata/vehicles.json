@@ -1,0 +1,596 @@
+[
+  {
+    "trip": {"trip_id": "7756346", "route_id": "200"},
+    "vehicle": {"id": "101", "label": "Green Line to Clackamas"},
+    "position": {
+      "lat": 45.491444,
+      "lng": -122.56629,
+      "bearing": 183,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 20,
+    "stop_id": "13127",
+    "current_status": 2,
+    "timestamp": 1511063486,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753692", "route_id": "100"},
+    "vehicle": {"id": "105", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.52132,
+      "lng": -122.98297,
+      "bearing": 90,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 3,
+    "stop_id": "9843",
+    "current_status": 2,
+    "timestamp": 1511063483,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753691", "route_id": "100"},
+    "vehicle": {"id": "108", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.514225,
+      "lng": -122.86105,
+      "bearing": 114,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 10,
+    "stop_id": "9830",
+    "current_status": 2,
+    "timestamp": 1511063495,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7756348", "route_id": "200"},
+    "vehicle": {"id": "109", "label": "Green Line to Clackamas"},
+    "position": {
+      "lat": 45.515854,
+      "lng": -122.68038,
+      "bearing": 19,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 4,
+    "stop_id": "13123",
+    "current_status": 1,
+    "timestamp": 1511063416,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754167", "route_id": "100"},
+    "vehicle": {"id": "111", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.49044,
+      "lng": -122.80729,
+      "bearing": 250,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 34,
+    "stop_id": "9823",
+    "current_status": 1,
+    "timestamp": 1511063485,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753683", "route_id": "100"},
+    "vehicle": {"id": "113", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.520435,
+      "lng": -122.47059,
+      "bearing": 121,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 42,
+    "stop_id": "8354",
+    "current_status": 1,
+    "timestamp": 1511063493,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754171", "route_id": "100"},
+    "vehicle": {"id": "118", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.531918,
+      "lng": -122.573105,
+      "bearing": 281,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 14,
+    "stop_id": "8371",
+    "current_status": 2,
+    "timestamp": 1511063492,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753689", "route_id": "100"},
+    "vehicle": {"id": "119", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.508144,
+      "lng": -122.77978,
+      "bearing": 339,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 16,
+    "stop_id": "9969",
+    "current_status": 2,
+    "timestamp": 1511063497,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754172", "route_id": "100"},
+    "vehicle": {"id": "120", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.522156,
+      "lng": -122.491196,
+      "bearing": 271,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 9,
+    "stop_id": "8366",
+    "current_status": 2,
+    "timestamp": 1511063488,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754166", "route_id": "100"},
+    "vehicle": {"id": "123", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.495285,
+      "lng": -122.82153,
+      "bearing": 299,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 35,
+    "stop_id": "9825",
+    "current_status": 1,
+    "timestamp": 1511063415,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754170", "route_id": "100"},
+    "vehicle": {"id": "124", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.530117,
+      "lng": -122.66382,
+      "bearing": 271,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 20,
+    "stop_id": "8377",
+    "current_status": 2,
+    "timestamp": 1511063437,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7752891", "route_id": "90"},
+    "vehicle": {"id": "201", "label": "Red Line to Beaverton"},
+    "position": {
+      "lat": 45.51854,
+      "lng": -122.67316,
+      "bearing": 201,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 17,
+    "stop_id": "8381",
+    "current_status": 2,
+    "timestamp": 1511063481,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7752891", "route_id": "90"},
+    "vehicle": {"id": "202", "label": "Red Line to Beaverton"},
+    "position": {
+      "lat": 45.51854,
+      "lng": -122.67316,
+      "bearing": 201,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 17,
+    "stop_id": "8381",
+    "current_status": 2,
+    "timestamp": 1511063481,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754168", "route_id": "100"},
+    "vehicle": {"id": "204", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.520264,
+      "lng": -122.69132,
+      "bearing": 208,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 29,
+    "stop_id": "9820",
+    "current_status": 1,
+    "timestamp": 1511063486,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7756348", "route_id": "200"},
+    "vehicle": {"id": "205", "label": "Green Line to Clackamas"},
+    "position": {
+      "lat": 45.515854,
+      "lng": -122.68038,
+      "bearing": 19,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 4,
+    "stop_id": "13123",
+    "current_status": 1,
+    "timestamp": 1511063416,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7755144", "route_id": "190"},
+    "vehicle": {"id": "206", "label": "Yellow Line to City Ctr/Milw"},
+    "position": {
+      "lat": 45.60535,
+      "lng": -122.68569,
+      "bearing": 203,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 1,
+    "stop_id": "11498",
+    "current_status": 1,
+    "timestamp": 1511063495,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7752630", "route_id": "90"},
+    "vehicle": {"id": "207", "label": "Red to Airport"},
+    "position": {
+      "lat": 45.53278,
+      "lng": -122.62082,
+      "bearing": 108,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 18,
+    "stop_id": "8344",
+    "current_status": 1,
+    "timestamp": 1511063493,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7752630", "route_id": "90"},
+    "vehicle": {"id": "208", "label": "Red to Airport"},
+    "position": {
+      "lat": 45.53278,
+      "lng": -122.62082,
+      "bearing": 108,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 18,
+    "stop_id": "8344",
+    "current_status": 1,
+    "timestamp": 1511063493,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753683", "route_id": "100"},
+    "vehicle": {"id": "209", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.520435,
+      "lng": -122.47059,
+      "bearing": 121,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 42,
+    "stop_id": "8354",
+    "current_status": 1,
+    "timestamp": 1511063493,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754170", "route_id": "100"},
+    "vehicle": {"id": "210", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.530117,
+      "lng": -122.66382,
+      "bearing": 271,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 20,
+    "stop_id": "8377",
+    "current_status": 2,
+    "timestamp": 1511063437,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7753692", "route_id": "100"},
+    "vehicle": {"id": "212", "label": "Blue to Gresham"},
+    "position": {
+      "lat": 45.52132,
+      "lng": -122.98297,
+      "bearing": 90,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 3,
+    "stop_id": "9843",
+    "current_status": 2,
+    "timestamp": 1511063483,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754172", "route_id": "100"},
+    "vehicle": {"id": "213", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.522156,
+      "lng": -122.491196,
+      "bearing": 271,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 9,
+    "stop_id": "8366",
+    "current_status": 2,
+    "timestamp": 1511063488,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7754165", "route_id": "100"},
+    "vehicle": {"id": "214", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.521286,
+      "lng": -122.97127,
+      "bearing": 270,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 45,
+    "stop_id": "9844",
+    "current_status": 2,
+    "timestamp": 1511063480,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7756629", "route_id": "200"},
+    "vehicle": {"id": "217", "label": "Green Line to City Ctr"},
+    "position": {
+      "lat": 45.508926,
+      "lng": -122.683014,
+      "bearing": 203,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 23,
+    "stop_id": "7606",
+    "current_status": 1,
+    "timestamp": 1511063497,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7756347", "route_id": "200"},
+    "vehicle": {"id": "218", "label": "Green Line to Clackamas"},
+    "position": {
+      "lat": 45.52536,
+      "lng": -122.56423,
+      "bearing": 186,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 17,
+    "stop_id": "13124",
+    "current_status": 2,
+    "timestamp": 1511063520,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7757274", "route_id": "290"},
+    "vehicle": {"id": "219", "label": "Orange Line to City Ctr/Expo"},
+    "position": {
+      "lat": 45.50372,
+      "lng": -122.67333,
+      "bearing": 341,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 10,
+    "stop_id": "13729",
+    "current_status": 2,
+    "timestamp": 1511063497,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7744148", "route_id": "17"},
+    "vehicle": {"id": "2201", "label": "17 To Saratoga"},
+    "position": {
+      "lat": 45.54983,
+      "lng": -122.63834,
+      "bearing": 98,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 81,
+    "stop_id": "7306",
+    "current_status": 2,
+    "timestamp": 1511063519,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 3
+  },
+  {
+    "trip": {"trip_id": "7744312", "route_id": "19"},
+    "vehicle": {"id": "2202", "label": "19 112th via 28th-Union Mnr"},
+    "position": {
+      "lat": 45.479263,
+      "lng": -122.63244,
+      "bearing": 87,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 68,
+    "stop_id": "6402",
+    "current_status": 2,
+    "timestamp": 1511063312,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 3
+  },
+  {
+    "trip": {"trip_id": "7745001", "route_id": "21"},
+    "vehicle": {"id": "2205", "label": "21 To Parkrose TC"},
+    "position": {
+      "lat": 45.54403,
+      "lng": -122.44919,
+      "bearing": 281,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 26,
+    "stop_id": "9723",
+    "current_status": 2,
+    "timestamp": 1511063324,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 3
+  },
+  {
+    "trip": {"trip_id": "7756633", "route_id": "200"},
+    "vehicle": {"id": "221", "label": "Green Line to City Ctr"},
+    "position": {
+      "lat": 45.43602,
+      "lng": -122.56789,
+      "bearing": 350,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 1,
+    "stop_id": "13132",
+    "current_status": 1,
+    "timestamp": 1511063483,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  },
+  {
+    "trip": {"trip_id": "7744588", "route_id": "20"},
+    "vehicle": {"id": "2213", "label": "20 Beaverton TC"},
+    "position": {
+      "lat": 45.519066,
+      "lng": -122.417274,
+      "bearing": 270,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 19,
+    "stop_id": "5407",
+    "current_status": 1,
+    "timestamp": 1511063325,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 3
+  },
+  {
+    "trip": {"trip_id": "7750073", "route_id": "72"},
+    "vehicle": {"id": "2219", "label": "72 Clackamas TC"},
+    "position": {
+      "lat": 45.55909,
+      "lng": -122.649994,
+      "bearing": 90,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 23,
+    "stop_id": "52",
+    "current_status": 2,
+    "timestamp": 1511063311,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 3
+  },
+  {
+    "trip": {"trip_id": "7754175", "route_id": "100"},
+    "vehicle": {"id": "222", "label": "Blue to Hillsboro"},
+    "position": {
+      "lat": 45.501842,
+      "lng": -122.41863,
+      "bearing": 284,
+      "odometer": 0,
+      "speed": 0
+    },
+    "current_stop_sequence": 1,
+    "stop_id": "8359",
+    "current_status": 1,
+    "timestamp": 1511063481,
+    "congestion_level": 0,
+    "occupancy_status": 0,
+    "route_type": 0
+  }
+]

@@ -1,0 +1,64 @@
+version: '3.3'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    command:
+      - "CompileDaemon"
+      - "-exclude-dir=.git"
+      - "-exclude-dir=node_modules"
+      - "-exclude-dir=web"
+      - "-graceful-kill=true"
+      - "-build=go build -o /go/bin/trimetric github.com/bsdavidson/trimetric/cmd/trimetric"
+      - "-command=/go/bin/trimetric --migrate=true --debug=true"
+    image: trimetric-api
+    ports:
+      - "9876:9876"
+    volumes:
+      - .:/go/src/github.com/bsdavidson/trimetric
+    working_dir: /go/src/github.com/bsdavidson/trimetric
+
+  chronograf:
+    image: chronograf:alpine
+    depends_on:
+      - influxdb
+    ports:
+      - "8888:8888"
+    volumes:
+      - chronograf:/var/lib/chronograf
+    command:
+      - "--influxdb-url=http://influxdb:8086"
+
+  influxdb:
+    ports:
+      - "8086:8086"
+
+  kafka:
+    ports:
+      - "9092:9092"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile-web
+    command: ["yarn", "run", "watch"]
+    depends_on:
+      - api
+    image: trimetric-web
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./web:/opt/trimetric/web
+
+  zookeeper:
+    ports:
+      - "2181:2181"

@@ -1,0 +1,82 @@
+.stop-list {
+  @include panel-wide-left;
+  padding: 20px 10px;
+
+  h3 {
+    @include panel-title;
+  }
+
+  .use-current {
+    color: $foreground-dark;
+    cursor: pointer;
+    font-size: 1.5em;
+    padding: 0.5em;
+    position: absolute;
+    right: 0.3em;
+    top: 0.1em;
+
+    &:hover {
+      color: $foreground-light;
+    }
+  }
+}
+
+@media screen and (max-width: 639px) {
+  .stop-list {
+    @include panel-narrow-bottom;
+  }
+}
+
+.stop-list-items {
+  // background: $background-light;
+  color: $foreground-light;
+  overflow: hidden;
+
+  .stop-link {
+    text-decoration: none;
+  }
+
+  .stop-list-item {
+    border-bottom: 0.3em solid $background-dark;
+    padding: 0.4em 0.2em 0.4em 0.8em;
+    position: relative;
+
+    &:last-child {
+      border: 0;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+
+      .stop-arrow {
+        color: lighten(desaturate($yellow-light, 40%), 10%);
+      }
+    }
+
+    .stop-id {
+      font-size: 0.7em;
+      font-weight: normal;
+    }
+
+    .stop-arrow {
+      color: rgba(255, 255, 255, 0.1);
+      font-size: 2em;
+      position: absolute;
+      right: 0.1em;
+      top: 0.1em;
+    }
+
+    .stop-description {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: normal;
+      margin: 0;
+    }
+
+    .stop-metrics {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 0.8em;
+      margin: 0;
+    }
+  }
+}

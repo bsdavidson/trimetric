@@ -1,0 +1,122 @@
+@import "~normalize.css/normalize.css";
+@import url(https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic);
+@import "glyphicons.scss";
+
+$background-dark: #2c3e50;
+$background-light: #34495e;
+$foreground-dark: #7f8c8d;
+$foreground-light: #ecf0f1;
+$turquoise-light: #1abc9c;
+$yellow-light: #f1c40f;
+
+// This button style is used for the back button on the arrivals list.
+@mixin button {
+  border-radius: 10px;
+  border: 2px solid rgba($foreground-light, 0.5);
+  color: $foreground-light;
+  cursor: pointer;
+  float: left;
+  font-size: 0.7em;
+  font-weight: bold;
+  margin: 0.5em 0 0.5em 0;
+  text-transform: uppercase;
+  padding: 0.5em 0.7em;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  &:hover {
+    border-color: $yellow-light;
+    color: lighten($yellow-light, 48%);
+  }
+}
+
+// For a wider viewport, panel-wide-left and panel-wide-right split the
+// viewport into two panels side by side. The left panel is used for
+// interactive content, and the right one is used to display the map.
+
+@mixin panel-short-left {
+  background: rgba($background-dark, 0.9);
+  left: 20px;
+  overflow-y: scroll;
+  position: absolute;
+  top: 20px;
+  width: 400px;
+  z-index: 2;
+}
+
+@mixin panel-wide-left {
+  background: rgba($background-dark, 0.9);
+  bottom: 20px;
+  left: 20px;
+  overflow-y: scroll;
+  position: absolute;
+  top: 20px;
+  width: 400px;
+  z-index: 2;
+}
+
+@mixin panel-wide-right {
+  bottom: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+}
+
+// For a narrow viewport, panel-narrow-bottom and panel-narrow-top split the
+// viewport into two panels stacked on top of each other. The bottom one is a
+// little larger and is used for interactive content, and the top one is
+// used to display the map.
+
+@mixin panel-narrow-bottom {
+  bottom: 0;
+  box-sizing: border-box;
+  left: 0;
+  overflow-y: scroll;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+}
+
+@mixin panel-narrow-top {
+  bottom: 50%;
+  box-sizing: border-box;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+// Larger title text that appears in the panels.
+@mixin panel-title {
+  color: $foreground-light;
+  font-size: 1.3em;
+  margin: 0em 0 0.4em 0.6em;
+}
+
+// Small piece of text that appears next to the component title.
+@mixin panel-subtitle {
+  cursor: pointer;
+  font-size: 0.5em;
+  font-style: italic;
+  font-weight: normal;
+  margin-left: 10px;
+  white-space: no-wrap;
+}
+
+body {
+  color: #111;
+  background: #34495e;
+  font-size: 17px;
+  line-height: 1.2;
+  font-family: "Roboto", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+@import url("https://fonts.googleapis.com/css?family=Allerta+Stencil|Roboto:300,300i,500,500i,700,700i");
+
+@import "./src/components/app.scss";
+@import "./src/components/arrival_list.scss";
+@import "./src/components/map.scss";
+@import "./src/components/stop_list.scss";

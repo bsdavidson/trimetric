@@ -1,0 +1,72 @@
+version: '3.3'
+services:
+  api:
+    depends_on:
+      - influxdb
+      - kafka
+      - postgres
+      - redis
+    image: bsdavidson/trimetric
+    ports:
+      - "8181:80"
+    restart: always
+    secrets:
+      - postgres-password
+      - trimet-api-key
+
+  influxdb:
+    image: influxdb:alpine
+    env_file:
+      - ./secrets/influxdb.env
+    environment:
+      - INFLUXDB_DB=trimetric
+      - INFLUXDB_HTTP_LOG_ENABLED=false
+      - INFLUXDB_USER=trimetric
+    restart: always
+    volumes:
+      - influxdb:/var/lib/influxdb
+
+  kafka:
+    hostname: kafka
+    image: wurstmeister/kafka:0.10.2.1
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_PORT=9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka:/kafka
+
+  postgres:
+    image: mdillon/postgis
+    environment:
+      - POSTGRES_USER=trimetric
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres-password
+    restart: always
+    secrets:
+      - postgres-password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    restart: always
+
+  zookeeper:
+    image: zookeeper
+    restart: always
+
+secrets:
+  postgres-password:
+    file: ./secrets/postgres-password
+  trimet-api-key:
+    file: ./secrets/trimet-api-key
+
+volumes:
+  chronograf: {}
+  influxdb: {}
+  kafka: {}
+  pgdata: {}
