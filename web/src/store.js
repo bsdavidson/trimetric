@@ -8,14 +8,14 @@ import {
   UPDATE_LOCATION
 } from "./actions";
 
-const DEFAULT_LOCATION = {
+export const DEFAULT_LOCATION = {
   lat: 45.522236,
   lng: -122.675827,
   gps: false,
   locationType: LocationTypes.HOME
 };
 
-const DEFAULT_BOUNDING_BOX = {
+export const DEFAULT_BOUNDING_BOX = {
   sw: {
     lat: 45.50889931447199,
     lng: -122.68664166674807

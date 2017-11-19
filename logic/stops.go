@@ -80,7 +80,7 @@ func (sd *StopSQLDataset) FetchWithinDistance(lat, lng, dist string) ([]StopWith
 		SELECT
 			id, code, name, "desc", lat_lon, zone_id, url, location_type,
 			parent_station, direction, position,
-			ST_Distance(ST_GeogFromText($1), lat_lon) as distance,
+			ST_Distance(ST_GeogFromText($1), lat_lon) AS distance
 		FROM stops
 		WHERE ST_DWithin(ST_GeogFromText($1), lat_lon, $2)
 		ORDER BY distance ASC

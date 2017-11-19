@@ -3,15 +3,16 @@ import {assert} from "chai";
 import {shallow} from "enzyme";
 import {ArrivalList} from "../src/components/arrival_list";
 import {ArrivalListItem} from "../src/components/arrival_list_item";
-import {getMockCombinedData, adjustTime} from "./mock_data";
+import {getMockStopsResponse, getMockArrivalsResponse} from "./mock_data";
 
 describe("<ArrivalsList />", () => {
   beforeEach(function() {
-    let mockStop = adjustTime(getMockCombinedData()).stops[0];
+    this.stop = getMockStopsResponse()[0];
     this.clickedStop = null;
     this.wrapper = shallow(
       <ArrivalList
-        stop={mockStop}
+        stop={this.stop}
+        arrivals={getMockArrivalsResponse()}
         onRouteNameClick={stop => {
           this.clickedStop = stop;
         }}
@@ -22,7 +23,7 @@ describe("<ArrivalsList />", () => {
   it("should render Stop Title", function() {
     assert.equal(
       this.wrapper.find(".arrival-list-description").text(),
-      "SW Washington & 3rdGet Directions"
+      this.stop.name
     );
   });
 
@@ -34,47 +35,34 @@ describe("<ArrivalsList />", () => {
   });
 
   it("should update location when Stop is clicked", function() {
-    this.wrapper
-      .find("h3")
-      .first()
-      .simulate("click");
-    assert.equal(this.clickedStop.locid, 6158);
+    let stopTitle = this.wrapper.find("h3").first();
+    stopTitle.simulate("click", {button: 0});
+    assert.equal(this.clickedStop.id, "6158");
   });
 });
 
 describe("<ArrivalListItem />", () => {
   beforeEach(function() {
-    let mockArrival = adjustTime(getMockCombinedData()).stops[0].arrivals[0];
-    let mockArrival2 = adjustTime(getMockCombinedData()).stops[0].arrivals[1];
+    this.arrivals = getMockArrivalsResponse();
 
-    let mockGoogle = {};
     let mockArrivalTime = "5 minutes";
     let mockColor = "#000000";
 
     this.wrapper = shallow(
       <ArrivalListItem
-        google={mockGoogle}
         key={1}
         color={mockColor}
-        arrival={mockArrival}
+        arrival={this.arrivals[0]}
         arrivalTime={mockArrivalTime}
       />
     );
     this.wrapper2 = shallow(
       <ArrivalListItem
-        google={mockGoogle}
         key={1}
         color={mockColor}
-        arrival={mockArrival2}
+        arrival={this.arrivals[1]}
         arrivalTime={mockArrivalTime}
       />
-    );
-  });
-
-  it("should show distance of next bus", function() {
-    assert.equal(
-      this.wrapper.find(".arrival-bus-distance").text(),
-      "1.94 miles away"
     );
   });
 
@@ -85,7 +73,7 @@ describe("<ArrivalListItem />", () => {
   it("should show full sign info", function() {
     assert.equal(
       this.wrapper.find(".arrival-name").text(),
-      "15 To SW 5th & Washington"
+      this.arrivals[0].vehicle_label
     );
   });
 
@@ -93,13 +81,6 @@ describe("<ArrivalListItem />", () => {
     assert.equal(
       this.wrapper.find(".arrival-direction").text(),
       "Traveling: W"
-    );
-  });
-
-  it("should Distance in Feet", function() {
-    assert.equal(
-      this.wrapper2.find(".arrival-bus-distance").text(),
-      "100 feet away"
     );
   });
 });

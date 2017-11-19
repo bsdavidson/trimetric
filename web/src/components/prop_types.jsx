@@ -21,8 +21,7 @@ const arrival = PropTypes.shape({
     odometer: PropTypes.number,
     speed: PropTypes.number
   }).isRequired,
-  date: PropTypes.string.isRequired,
-  estimated: PropTypes.number.isRequired
+  date: PropTypes.string.isRequired
 });
 
 const arrivals = PropTypes.arrayOf(arrival);

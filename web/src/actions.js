@@ -24,6 +24,7 @@ export function updateHomeLocation(lat, lng, gps = true) {
   return {
     type: UPDATE_HOME_LOCATION,
     home: {
+      locationType: LocationTypes.HOME,
       lat,
       lng,
       gps

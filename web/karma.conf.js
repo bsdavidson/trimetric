@@ -25,7 +25,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ["mocha", "notify", "coverage"],
+    reporters: ["mocha", "notify", "coverage", "clear-screen"],
     mochaReporter: {
       showDiff: true
     },
@@ -37,6 +37,12 @@ module.exports = function(config) {
     // level of logging
     // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
     logLevel: config.LOG_INFO,
+    browserConsoleLogOptions: {
+      level: "log",
+      format: "%b %T: %m",
+      terminal: true
+    },
+
     // enable / disable watching file and executing tests whenever any file changes
     autoWatch: true,
     // start these browsers
@@ -55,7 +61,7 @@ module.exports = function(config) {
       },
       module: {
         // rename to rules
-        loaders: [
+        rules: [
           // {
           //   test: /\.json$/,
           //   loader: "json-loader",
@@ -69,6 +75,14 @@ module.exports = function(config) {
                 presets: ["es2015", "react"]
               }
             }
+          },
+          {
+            test: /\.s?css$/,
+            use: [
+              {loader: "style-loader"},
+              {loader: "css-loader"},
+              {loader: "sass-loader"}
+            ]
           }
         ]
       },

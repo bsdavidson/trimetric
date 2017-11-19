@@ -1,40 +1,49 @@
 package logic
 
-// func TestFetchByIds(t *testing.T) {
-// 	db := setupTestDB(t)
-// 	defer db.Close()
+import (
+	"database/sql"
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
 
-// 	vds := VehicleSQLDataset{DB: db}
+	"github.com/bsdavidson/trimetric/trimet"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// 	pwd, err := os.Getwd()
-// 	require.NoError(t, err)
-// 	rc, err := ioutil.ReadFile(pwd + "/fixtures/vehicles.json")
-// 	require.NoError(t, err)
+func loadVehicles(t *testing.T, db *sql.DB) []trimet.VehiclePosition {
 
-// 	assert.Equal(t, 530984, len(rc))
+	f, err := os.Open("./testdata/vehicles.json")
+	require.NoError(t, err)
 
-// 	var vrs trimet.GTF
+	b, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
 
-// 	require.NoError(t, json.Unmarshal(rc, &vrs))
+	var vehicles []trimet.VehiclePosition
+	err = json.Unmarshal(b, &vehicles)
+	require.NoError(t, err)
 
-// 	require.Len(t, vrs.ResultSet.Vehicles, 616)
-// 	for _, v := range vrs.ResultSet.Vehicles {
-// 		var rv trimet.RawVehicleData
+	return vehicles
+}
 
-// 		require.NoError(t, json.Unmarshal(v.Data, &rv))
-// 		_, ok := rv["expires"]
-// 		if ok {
-// 			rv["expires"] = time.Now().Add(time.Hour).Unix() * 1000
-// 			// log.Println(time.Unix(int64(val.(float64))/1000, 0).String())
-// 		}
-// 		b, err := json.Marshal(rv)
-// 		require.NoError(t, err)
-// 		v.Data = b
-// 		require.NoError(t, vds.Upsert(&v))
-// 	}
+func TestFetchByIds(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
 
-// 	trv, err := vds.FetchByIDs([]int{101, 110, 2203})
-// 	require.NoError(t, err)
+	vehicles := loadVehicles(t, db)
+	assert.Equal(t, 33, len(vehicles))
 
-// 	assert.Len(t, trv, 3)
-// }
+	vds := VehicleSQLDataset{DB: db}
+
+	for _, v := range vehicles {
+		v.Timestamp = uint64(time.Now().Unix())
+		require.NoError(t, vds.UpsertVehiclePosition(&v))
+	}
+
+	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{201, 202, 204})
+	require.NoError(t, err)
+
+	assert.Equal(t, 3, len(newVehicles))
+}

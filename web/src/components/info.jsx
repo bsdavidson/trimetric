@@ -24,9 +24,10 @@ export default function Info() {
         </p>
         <p className="info-text-credits">
           Trimetric was built by me,{" "}
-          <a href="https://briand.co">Brian Davidson</a>. It&quot;s open source
+          <a href="https://briand.co">Brian Davidson</a>. It&apos;s open source
           and you can find the code at
           <a href="https://github.com/bsdavidson/trimetric">
+            {" "}
             github.com/bsdavidson/trimetric
           </a>
         </p>

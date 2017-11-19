@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/bsdavidson/trimetric/trimet"
 	"github.com/pressly/goose"
-	_ "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,24 +28,27 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func loadStopFixtures(t *testing.T, db *sql.DB) *StopSQLDataset {
+	stops, err := trimet.ReadGTFSCSV("./fixtures/stops.txt")
+	require.NoError(t, err)
+
+	lds := LoaderSQLDataset{DB: db}
+	sds := StopSQLDataset{DB: db}
+	tx, err := db.Begin()
+	require.NoError(t, err)
+
+	require.NoError(t, lds.LoadStops(tx, stops))
+	require.NoError(t, tx.Commit())
+	return &sds
+}
+
 func TestFetchWithinDistance(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
 
-	// db := setupTestDB(t)
-	// defer db.Close()
+	sds := loadStopFixtures(t, db)
+	stops, err := sds.FetchWithinDistance("45.5247402", "-122.6787931", "500")
+	require.NoError(t, err)
 
-	// pwd, err := os.Getwd()
-	// require.NoError(t, err)
-	// stops, err := trimet.ReadGTFSCSV(pwd + "/fixtures/stops.txt")
-	// require.NoError(t, err)
-
-	// lds := LoaderSQLDataset{DB: db}
-	// sds := StopSQLDataset{DB: db}
-
-	// assert.NoError(t, lds.LoadStops(stops))
-	// //lat=45.5247402&lng=-122.6787931&distance=100
-	// stps, err := sds.FetchWithinDistance("45.5247402", "-122.6787931", "500")
-	// require.NoError(t, err)
-
-	// assert.Len(t, stps, 48)
-
+	assert.Len(t, stops, 48)
 }

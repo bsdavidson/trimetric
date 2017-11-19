@@ -142,7 +142,7 @@ func parseDuration(s string) (*Time, error) {
 	}
 	parts := strings.Split(s, ":")
 	if len(parts) != 3 {
-		return nil, errors.Errorf("gtfs.parseDuration: expected 3 parts, found %d", len(parts))
+		return nil, errors.Errorf("expected 3 parts, found %d", len(parts))
 	}
 
 	var intParts [3]time.Duration

@@ -10,7 +10,7 @@ import Map from "./map";
 import StopList from "./stop_list";
 import {updateViewport} from "../actions";
 
-class App extends Component {
+export class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -34,6 +34,9 @@ class App extends Component {
 
   handleResize() {
     let mapbox = document.getElementById("mapbox");
+    if (!mapbox) {
+      return;
+    }
     this.setState({
       mapWidth: mapbox.clientWidth,
       mapHeight: mapbox.clientHeight
@@ -46,13 +49,13 @@ class App extends Component {
         nextProps.match.params &&
         nextProps.match.params.stopID) ||
       null;
-    let selectedStopID = this.selectedStop ? this.selectedStop.id : null;
+    let selectedStop = this.selectedStop ? this.selectedStop.id : null;
 
     if (!newStopID) {
       this.selectedStop = null;
     }
 
-    if (newStopID !== selectedStopID) {
+    if (newStopID !== selectedStop) {
       this.selectedStop = this.props.stops.find(s => s.id == newStopID);
       this.props.onStopChange(this.selectedStop);
     }

@@ -7,16 +7,18 @@ import {createMemoryHistory} from "history";
 
 import {StopList} from "../src/components/stop_list";
 import {StopListItem} from "../src/components/stop_list_item";
-import {reducer, store} from "../src/store";
+import {reducer, store, DEFAULT_LOCATION} from "../src/store";
 import {render} from "../src/router";
-import {updateHomeLocation} from "../src/actions";
-import {getMockCombinedData, getMockState, adjustTime} from "./mock_data";
+import {updateHomeLocation, LocationTypes} from "../src/actions";
+import {
+  getMockState,
+  getMockStopsResponse,
+  getMockArrivalsResponse
+} from "./mock_data";
 
 describe("<StopList />", () => {
   it("should render a list of <StopListItem />", function() {
-    let mockStops = adjustTime(getMockCombinedData());
-
-    this.wrapper = shallow(<StopList stops={mockStops.stops} />);
+    this.wrapper = shallow(<StopList stops={getMockStopsResponse()} />);
     assert.equal(
       this.wrapper.find(".stop-list-items").text(),
       "<withRouter(Connect(StopListItem)) />"
@@ -24,49 +26,42 @@ describe("<StopList />", () => {
   });
 
   it("should handle no stops", function() {
-    let mockStops = {stops: []};
-    let mockState = getMockState();
-    this.wrapper = shallow(
-      <StopList stops={mockStops.stops} state={mockState} />
-    );
+    this.wrapper = shallow(<StopList stops={[]} />);
     assert.equal(
       this.wrapper
-        .find(".stop-list-items")
+        .find("h3")
         .first()
         .text(),
-      "Sorry, no buses are running near you. Better start walking or call an Uber."
+      "Visible Stops (0)"
     );
+    assert.equal(this.wrapper.find(".stop-list-item").length, 0);
   });
 
   it("should update current Location", function() {
-    assert.equal(store.getState().location.lat, 45.5247402);
+    assert.equal(store.getState().location, DEFAULT_LOCATION);
     store.dispatch(updateHomeLocation(123, 456, true));
-    assert.equal(store.getState().location.lat, 123);
+    assert.deepEqual(store.getState().location, {
+      locationType: LocationTypes.HOME,
+      lat: 123,
+      lng: 456,
+      gps: true
+    });
   });
 });
 
 describe("<StopListItem />", () => {
   beforeEach(function() {
-    let mockStops = adjustTime(getMockCombinedData());
-    let stop = mockStops.stops[0];
-    let location = getMockState().location;
     this.wrapper = shallow(
-      <StopListItem key={123} stop={stop} location={location} />
+      <StopListItem
+        key={123}
+        stop={getMockStopsResponse()[0]}
+        location={getMockState().location}
+      />
     );
   });
 
   it("should render a single stop item", function() {
     assert.equal(this.wrapper.find(".stop-list-item").length, 1);
-  });
-
-  it("should render next arrival time", function() {
-    assert.equal(
-      this.wrapper
-        .find(".stop-estimate")
-        .first()
-        .text(),
-      "in 10 minutes "
-    );
   });
 
   it("should render distance to stop", function() {
@@ -92,37 +87,48 @@ describe("<StopListItem />", () => {
 
 describe("<StopList /> routing", () => {
   it("should render <Arrivals /> when URL is /stop/6158 and can goBack", function() {
-    let mockData = getMockCombinedData();
+    let stops = getMockStopsResponse();
+    let arrivals = getMockArrivalsResponse();
+
     let mockStore = createStore(reducer, {
-      stops: mockData.stops,
-      vehicles: {arrivals: []}
+      arrivals,
+      stops,
+      boundingBox: {ne: stops[0], sw: stops[0]},
+      zoom: 16
     });
 
     let mockHistory = createMemoryHistory("/");
 
     this.wrapper = mount(
-      render(mockStore, {Router: Router, history: mockHistory})
+      render(mockStore, () => {}, {Router: Router, history: mockHistory})
     );
+
     let firstLink = this.wrapper.find(".stop-link").first();
     assert.equal(
       firstLink.html().includes('<a class="stop-link" href="/stop/6158">'),
       true
     );
-    mockHistory.push({
-      pathname: "/stop/6158"
-    });
+    // mockHistory.push({
+    //   pathname: "/stop/6158"
+    // });
+    firstLink.simulate("click", {button: 0});
+
     this.wrapper.update();
     assert.equal(
       this.wrapper
         .find(".arrival-name")
         .first()
         .text(),
-      "15 To SW 5th & Washington"
+      arrivals[0].vehicle_label
     );
     this.wrapper
       .find(".back-button")
       .first()
-      .simulate("click");
+      .simulate("click", {button: 0});
+
+    this.wrapper.update();
+    firstLink = this.wrapper.find(".stop-link").first();
+
     assert.equal(
       firstLink.html().includes('<a class="stop-link" href="/stop/6158">'),
       true

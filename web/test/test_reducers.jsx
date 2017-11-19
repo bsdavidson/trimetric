@@ -12,10 +12,15 @@ describe("Reducers", function() {
         vehicles: "OldData"
       });
       assert.equal(store.getState().stops, "OldData");
-      store.dispatch(updateData("NewStops", "NewVehicles", 123));
-      assert.equal(store.getState().stops, "NewStops");
-      assert.equal(store.getState().vehicles, "NewVehicles");
-      assert.equal(store.getState().queryTime, 123);
+      store.dispatch(
+        updateData("stops", "vehicles", "arrivals", "geoJsonData", "iconData")
+      );
+      let state = store.getState();
+      assert.equal(state.stops, "stops");
+      assert.equal(state.vehicles, "vehicles");
+      assert.equal(state.arrivals, "arrivals");
+      assert.equal(state.geoJsonData, "geoJsonData");
+      assert.equal(state.iconData, "iconData");
     });
   });
 });

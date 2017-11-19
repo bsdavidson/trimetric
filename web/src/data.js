@@ -49,19 +49,19 @@ export class Trimet {
     this.fetch = _fetch;
     this.running = false;
     this.timeoutID = null;
-    this.selectedStopID = null;
+    this.selectedStop = null;
 
     this.handleStopChange = this.handleStopChange.bind(this);
   }
 
   handleStopChange(stop) {
     if (stop) {
-      this.selectedStopID = stop;
+      this.selectedStop = stop;
       this.store.dispatch(
         updateLocation(LocationTypes.STOP, stop.id, stop.lat, stop.lng, false)
       );
     } else {
-      this.selectedStopID = null;
+      this.selectedStop = null;
     }
   }
 
@@ -105,8 +105,8 @@ export class Trimet {
 
   fetchData(lat, lng, bbox) {
     let promises = [this.fetchStops(), this.fetchVehicles()];
-    if (this.selectedStopID) {
-      promises.push(this.fetchArrivals(this.selectedStopID));
+    if (this.selectedStop) {
+      promises.push(this.fetchArrivals(this.selectedStop));
     }
 
     return Promise.all(promises).then(results => {

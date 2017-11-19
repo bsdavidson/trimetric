@@ -30,16 +30,16 @@ func TestTime(t *testing.T) {
 }
 
 func TestParseDuration(t *testing.T) {
-	nilDur := time.Duration(-1)
+	nilDur := Time(-1)
 
 	tests := []struct {
 		input string
-		dur   time.Duration
+		dur   Time
 		err   error
 	}{
 		{
 			input: "10:11:12",
-			dur:   10*time.Hour + 11*time.Minute + 12*time.Second,
+			dur:   Time(10*time.Hour + 11*time.Minute + 12*time.Second),
 			err:   nil,
 		},
 		{
@@ -50,18 +50,23 @@ func TestParseDuration(t *testing.T) {
 		{
 			input: "12:23",
 			dur:   nilDur,
-			err:   errors.New("gtfs.parseDuration: expected 3 parts, found 2"),
+			err:   errors.New("expected 3 parts, found 2"),
 		},
 		{
 			input: "12:BAD:TEXT",
 			dur:   nilDur,
-			err:   errors.New("gtfs.parseDuration: strconv.Atoi: parsing \"BAD\": invalid syntax"),
+			err:   errors.New("strconv.Atoi: parsing \"BAD\": invalid syntax"),
 		},
 	}
 
 	for _, test := range tests {
 		dur, err := parseDuration(test.input)
-		assert.Equal(t, err, test.err)
+
+		if test.err == nil {
+			assert.Nil(t, err)
+		} else {
+			assert.EqualError(t, err, test.err.Error())
+		}
 		if test.dur == nilDur {
 			assert.Nil(t, dur)
 		} else if assert.NotNil(t, dur) {
