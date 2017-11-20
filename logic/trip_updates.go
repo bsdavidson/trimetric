@@ -5,22 +5,19 @@ import (
 	"context"
 	"database/sql"
 	"encoding/gob"
-	"io"
 	"log"
 	"time"
 
-	"github.com/Shopify/sarama"
 	"github.com/bsdavidson/trimetric/trimet"
-	"github.com/influxdata/influxdb/client/v2"
 	"github.com/pkg/errors"
 )
 
-const tripUpdatesTopic = "trip_updates"
 const tripUpdateDuration = 5000 * time.Millisecond
 
 // TripUpdatesDataset provides methods to update and retrieve trip update data
 type TripUpdatesDataset interface {
 	UpdateTripUpdates(tus []trimet.TripUpdate) error
+	UpdateTripUpdateBytes(ctx context.Context, b []byte) error
 	FetchTripUpdates() ([]trimet.TripUpdate, error)
 }
 
@@ -29,119 +26,7 @@ type TripUpdateSQLDataset struct {
 	DB *sql.DB
 }
 
-// ProduceTripUpdates makes requests to the Trimet API and sends the results to
-// Kafka.
-func ProduceTripUpdates(ctx context.Context, apiKey string, influxClient client.Client, kafkaAddr string) error {
-	log.Println("starting produceTripUpdates")
-
-	producer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer func() {
-		if err := producer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	ticker := time.NewTicker(tripUpdateDuration)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-		}
-
-		tripUpdates, err := trimet.RequestTripUpdate(apiKey)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		var b bytes.Buffer
-		if err := gob.NewEncoder(&b).Encode(tripUpdates); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		_, _, err = producer.SendMessage(&sarama.ProducerMessage{
-			Topic: tripUpdatesTopic,
-			Value: sarama.ByteEncoder(b.Bytes()),
-		})
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-	}
-}
-
-// ConsumeTripUpdates monitors the Kafka 'trip_updates' topic for new messages and
-// writes them to a DB.
-func ConsumeTripUpdates(ctx context.Context, tuds TripUpdatesDataset, influxClient client.Client, kafkaAddr string) error {
-	config := sarama.NewConfig()
-	config.Consumer.Return.Errors = true
-	consumer, err := sarama.NewConsumer([]string{kafkaAddr}, config)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer func() {
-		if err := consumer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	partitionConsumer, err := consumer.ConsumePartition(tripUpdatesTopic, 0, sarama.OffsetNewest)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	defer func() {
-		if err := partitionConsumer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	go func() {
-		for err := range partitionConsumer.Errors() {
-			log.Println(err, err.Partition, err.Topic)
-		}
-	}()
-
-MESSAGE:
-	for {
-		select {
-		case msg := <-partitionConsumer.Messages():
-			var b bytes.Buffer
-			var tu []trimet.TripUpdate
-
-			decoder := gob.NewDecoder(&b)
-			_, err := b.Write(msg.Value)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-		DECODE:
-			for {
-				err = decoder.Decode(&tu)
-				if err == io.EOF {
-					break DECODE
-				} else if err != nil {
-					log.Println(err)
-					continue MESSAGE
-				}
-			}
-			if err := tuds.UpdateTripUpdates(tu); err != nil {
-				log.Println(err)
-			}
-
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-// FetchTripUpdates ...
+// FetchTripUpdates return Tripupdates from the DB
 func (tuds *TripUpdateSQLDataset) FetchTripUpdates() ([]trimet.TripUpdate, error) {
 	tx, err := tuds.DB.Begin()
 	if err != nil {
@@ -285,4 +170,51 @@ func (tuds *TripUpdateSQLDataset) UpdateTripUpdates(tus []trimet.TripUpdate) err
 		return rollbackError(tx.Rollback(), err)
 	}
 	return nil
+}
+
+// UpdateTripUpdateBytes reads bytes and updates the TripUpdates DB
+func (tuds *TripUpdateSQLDataset) UpdateTripUpdateBytes(ctx context.Context, b []byte) error {
+	var tu []trimet.TripUpdate
+
+	err := gob.NewDecoder(bytes.NewReader(b)).Decode(&tu)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err = tuds.UpdateTripUpdates(tu); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ProduceTripUpdates makes requests to the Trimet API and sends the results to
+// Kafka.
+func ProduceTripUpdates(ctx context.Context, apiKey string, p Producer) error {
+	ticker := time.NewTicker(tripUpdateDuration)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+		}
+
+		tripUpdates, err := trimet.RequestTripUpdate(apiKey)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		var b bytes.Buffer
+		if err := gob.NewEncoder(&b).Encode(tripUpdates); err != nil {
+			log.Println(err)
+			continue
+		}
+
+		err = p.Produce(b.Bytes())
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+	}
 }
