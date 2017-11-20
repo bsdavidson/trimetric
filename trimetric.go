@@ -135,18 +135,14 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 		logic.PollGTFSData(ctx, lds, redisPool, 24*time.Hour)
 	}()
 
-	var debugSrv *http.Server
-	if debug {
-		http.Handle("/metrics", promhttp.Handler())
-		log.Println("debug listening on :9876")
-		debugSrv = &http.Server{Addr: ":9876", Handler: http.DefaultServeMux}
-		go func() {
-			if err := debugSrv.ListenAndServe(); err != nil {
-				log.Println(err)
-			}
-		}()
-
-	}
+	http.Handle("/metrics", promhttp.Handler())
+	log.Println("debug listening on :9876")
+	internalSrv := &http.Server{Addr: ":9876", Handler: http.DefaultServeMux}
+	go func() {
+		if err := internalSrv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/vehicles", api.HandleVehiclePositions(vds))
@@ -166,10 +162,8 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			log.Println(err)
 		}
-		if debugSrv != nil {
-			if err := debugSrv.Shutdown(shutdownCtx); err != nil {
-				log.Println(err)
-			}
+		if err := internalSrv.Shutdown(shutdownCtx); err != nil {
+			log.Println(err)
 		}
 	}()
 
