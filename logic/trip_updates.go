@@ -34,7 +34,7 @@ type TripUpdateSQLDataset struct {
 func ProduceTripUpdates(ctx context.Context, apiKey string, influxClient client.Client, kafkaAddr string) error {
 	log.Println("starting produceTripUpdates")
 
-	producer, err := sarama.NewAsyncProducer([]string{kafkaAddr}, nil)
+	producer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -44,33 +44,34 @@ func ProduceTripUpdates(ctx context.Context, apiKey string, influxClient client.
 		}
 	}()
 
-	go func() {
-		for e := range producer.Errors() {
-			log.Println(e.Error())
-		}
-	}()
-
 	ticker := time.NewTicker(tripUpdateDuration)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-
 		case <-ticker.C:
-			tripUpdates, err := trimet.RequestTripUpdate(apiKey)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			var b bytes.Buffer
-			enc := gob.NewEncoder(&b)
+		}
 
-			if err := enc.Encode(tripUpdates); err != nil {
-				log.Println(err)
-				continue
-			}
-			producer.Input() <- &sarama.ProducerMessage{Topic: tripUpdatesTopic, Value: sarama.ByteEncoder(b.Bytes())}
+		tripUpdates, err := trimet.RequestTripUpdate(apiKey)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		var b bytes.Buffer
+		if err := gob.NewEncoder(&b).Encode(tripUpdates); err != nil {
+			log.Println(err)
+			continue
+		}
+
+		_, _, err = producer.SendMessage(&sarama.ProducerMessage{
+			Topic: tripUpdatesTopic,
+			Value: sarama.ByteEncoder(b.Bytes()),
+		})
+		if err != nil {
+			log.Println(err)
+			continue
 		}
 	}
 }

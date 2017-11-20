@@ -17,6 +17,7 @@ import (
 	"github.com/influxdata/influxdb/client/v2"
 	"github.com/pkg/errors"
 	"github.com/pressly/goose"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // OpenDB connects to the database.
@@ -95,13 +96,15 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	}()
 
 	go func() {
+		defer cancel()
 		defer wg.Done()
-		if err := logic.ProduceVehiclePositions(ctx, strings.TrimSpace(apiKey), influxClient, kafkaAddr); err != nil {
+		if err := logic.ProduceVehiclePositions(ctx, strings.TrimSpace(apiKey), kafkaAddr); err != nil {
 			log.Println(err)
 		}
 	}()
 
 	go func() {
+		defer cancel()
 		defer wg.Done()
 		if err := logic.ProduceTripUpdates(ctx, strings.TrimSpace(apiKey), influxClient, kafkaAddr); err != nil {
 			log.Println(err)
@@ -111,6 +114,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	updateChan := make(chan trimet.VehiclePosition)
 
 	go func() {
+		defer cancel()
 		defer wg.Done()
 		if err := logic.ConsumeVehiclePositions(ctx, vds, influxClient, kafkaAddr); err != nil {
 			log.Println(err)
@@ -118,6 +122,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	}()
 
 	go func() {
+		defer cancel()
 		defer wg.Done()
 		if err := logic.ConsumeTripUpdates(ctx, tuds, influxClient, kafkaAddr); err != nil {
 			log.Println(err)
@@ -125,12 +130,14 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	}()
 
 	go func() {
+		defer cancel()
 		defer wg.Done()
 		logic.PollGTFSData(ctx, lds, redisPool, 24*time.Hour)
 	}()
 
 	var debugSrv *http.Server
 	if debug {
+		http.Handle("/metrics", promhttp.Handler())
 		log.Println("debug listening on :9876")
 		debugSrv = &http.Server{Addr: ":9876", Handler: http.DefaultServeMux}
 		go func() {

@@ -16,7 +16,79 @@ import (
 	"github.com/influxdata/influxdb/client/v2"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var (
+	vehicleProducerDuplicatesTotal        prometheus.Counter
+	vehicleProducerEncodingErrorsTotal    prometheus.Counter
+	vehicleProducerMessageErrorsTotal     prometheus.Counter
+	vehicleProducerMessagesTotal          prometheus.Counter
+	vehicleProducerProcessDurationSeconds prometheus.Histogram
+	vehicleProducerRequestDurationSeconds prometheus.Histogram
+	vehicleProducerRequestErrorsTotal     prometheus.Counter
+	vehicleProducerRequestItemsTotal      prometheus.Counter
+)
+
+func init() {
+	vehicleProducerDuplicatesTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_duplicates_total",
+			Help: "Total number of duplicate vehicle positions received",
+		},
+	)
+	vehicleProducerEncodingErrorsTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_encoding_errors_total",
+			Help: "Total number of errors from encoding GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerMessageErrorsTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_errors_total",
+			Help: "Total number of errors from producing GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerMessagesTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_messages_total",
+			Help: "Total messages produced for GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerProcessDurationSeconds = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name: "trimetric_vehicle_producer_duration_seconds",
+			Help: "Duration of time to process a batch of GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerRequestDurationSeconds = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name: "trimetric_vehicle_producer_request_duration_seconds",
+			Help: "Duration of requests for GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerRequestErrorsTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_request_errors_total",
+			Help: "Total number of errors from requests for GTFS realtime vehicle positions",
+		},
+	)
+	vehicleProducerRequestItemsTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "trimetric_vehicle_producer_request_items_total",
+			Help: "Total number of items recieved within responses for GTFS realtime vehicle positions",
+		},
+	)
+
+	prometheus.MustRegister(vehicleProducerDuplicatesTotal)
+	prometheus.MustRegister(vehicleProducerEncodingErrorsTotal)
+	prometheus.MustRegister(vehicleProducerMessageErrorsTotal)
+	prometheus.MustRegister(vehicleProducerMessagesTotal)
+	prometheus.MustRegister(vehicleProducerProcessDurationSeconds)
+	prometheus.MustRegister(vehicleProducerRequestDurationSeconds)
+	prometheus.MustRegister(vehicleProducerRequestErrorsTotal)
+	prometheus.MustRegister(vehicleProducerRequestItemsTotal)
+}
 
 const vehiclePositionsTopic = "vehicle_positions"
 
@@ -124,10 +196,8 @@ func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) er
 
 // ProduceVehiclePositions makes requests to the Trimet API and sends the results to
 // Kafka.
-func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient client.Client, kafkaAddr string) error {
-	log.Println("starting ProduceVehiclePositions")
-
-	producer, err := sarama.NewAsyncProducer([]string{kafkaAddr}, nil)
+func ProduceVehiclePositions(ctx context.Context, apiKey string, kafkaAddr string) error {
+	producer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -137,74 +207,58 @@ func ProduceVehiclePositions(ctx context.Context, apiKey string, influxClient cl
 		}
 	}()
 
-	go func() {
-		for err := range producer.Errors() {
-			log.Println(err)
-		}
-	}()
-
-	var lastQueryTime int64
+	var lastQueryTime time.Time
 	vehicleMap := map[*string]trimet.VehiclePosition{}
 
-	// Create a new point batch
-	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  "trimetric",
-		Precision: "s",
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	tags := map[string]string{"trimet_vehicle": "updated_count"}
-
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+REQUEST_LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		default:
-			time.Sleep(1000 * time.Millisecond)
+		case <-ticker.C:
+		}
 
-			queryTime := time.Now()
-			vehicles, err := trimet.RequestVehiclePositions(apiKey, lastQueryTime)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
+		queryTime := time.Now()
+		vehicles, err := trimet.RequestVehiclePositions(apiKey, lastQueryTime.Unix()*1000)
+		vehicleProducerRequestDurationSeconds.Observe(time.Since(queryTime).Seconds())
+		if err != nil {
+			vehicleProducerRequestErrorsTotal.Add(1)
+			log.Println(err)
+			continue
+		}
+		vehicleProducerRequestItemsTotal.Add(float64(len(vehicles)))
 
-			// log.Printf("Retrieved %d vehicles at %v\n", len(vehicles), lastQueryTime)
-			var b bytes.Buffer
-			enc := gob.NewEncoder(&b)
-
-			fields := map[string]interface{}{
-				"count": len(vehicles),
-			}
-
-			pt, err := client.NewPoint("retrieved_vehicles", tags, fields, time.Now())
-			if err != nil {
-				log.Println(err)
-			}
-			bp.AddPoint(pt)
-			if err := influxClient.Write(bp); err != nil {
-				log.Println(err)
-			}
-
-		VEHICLE:
-			for _, tv := range vehicles {
-				if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
-					if tv.IsEqual(val) {
-						continue VEHICLE
-					}
-				}
-				vehicleMap[tv.Vehicle.ID] = tv
-				if err := enc.Encode(tv); err != nil {
-					log.Println(err)
+		var b bytes.Buffer
+		enc := gob.NewEncoder(&b)
+		t := time.Now()
+		for _, tv := range vehicles {
+			if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
+				if tv.IsEqual(val) {
+					vehicleProducerDuplicatesTotal.Add(1)
 					continue
 				}
-
-				producer.Input() <- &sarama.ProducerMessage{Topic: vehiclePositionsTopic, Value: sarama.ByteEncoder(b.Bytes())}
-				lastQueryTime = (queryTime.Unix() * 1000)
-
+			}
+			vehicleMap[tv.Vehicle.ID] = tv
+			if err := enc.Encode(tv); err != nil {
+				vehicleProducerEncodingErrorsTotal.Add(1)
+				log.Println(err)
+				continue REQUEST_LOOP
+			}
+			vehicleProducerMessagesTotal.Add(1)
+			_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+				Topic: vehiclePositionsTopic,
+				Value: sarama.ByteEncoder(b.Bytes()),
+			})
+			if err != nil {
+				vehicleProducerMessageErrorsTotal.Add(1)
+				log.Println(err)
+				continue REQUEST_LOOP
 			}
 		}
+		vehicleProducerProcessDurationSeconds.Observe(time.Since(t).Seconds())
+		lastQueryTime = queryTime
 	}
 }
 
@@ -243,6 +297,8 @@ func ConsumeVehiclePositions(ctx context.Context, vd VehicleDataset, influxClien
 MESSAGE:
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case msg := <-partitionConsumer.Messages():
 			var b bytes.Buffer
 			var v trimet.VehiclePosition
@@ -268,9 +324,7 @@ MESSAGE:
 				break
 			}
 
-		case <-ctx.Done():
-			return nil
 		}
-	}
 
+	}
 }
