@@ -111,36 +111,35 @@ func RequestVehiclePositions(appID string, since int64) ([]VehiclePosition, erro
 	}
 
 	var vp []VehiclePosition
-	for _, entity := range feed.Entity {
-		vehicle := entity.GetVehicle()
-		if vehicle.GetTrip() == nil {
+	for _, e := range feed.Entity {
+		if e.Vehicle == nil || e.Vehicle.Trip == nil {
 			continue
 		}
-		v := VehiclePosition{
+
+		vp = append(vp, VehiclePosition{
 			Trip: TripDescriptor{
-				TripID:  vehicle.GetTrip().TripId,
-				RouteID: vehicle.GetTrip().RouteId,
+				TripID:  e.Vehicle.GetTrip().TripId,
+				RouteID: e.Vehicle.GetTrip().RouteId,
 			},
 			Vehicle: VehicleDescriptor{
-				ID:    vehicle.GetVehicle().Id,
-				Label: vehicle.GetVehicle().Label,
+				ID:    e.Vehicle.GetVehicle().Id,
+				Label: e.Vehicle.GetVehicle().Label,
 			},
 
 			Position: Position{
-				Latitude:  vehicle.GetPosition().GetLatitude(),
-				Longitude: vehicle.GetPosition().GetLongitude(),
-				Bearing:   vehicle.GetPosition().GetBearing(),
-				Odometer:  vehicle.GetPosition().GetOdometer(),
-				Speed:     vehicle.GetPosition().GetSpeed(),
+				Latitude:  e.Vehicle.GetPosition().GetLatitude(),
+				Longitude: e.Vehicle.GetPosition().GetLongitude(),
+				Bearing:   e.Vehicle.GetPosition().GetBearing(),
+				Odometer:  e.Vehicle.GetPosition().GetOdometer(),
+				Speed:     e.Vehicle.GetPosition().GetSpeed(),
 			},
-			CurrentStopSequence: vehicle.GetCurrentStopSequence(),
-			StopID:              vehicle.GetStopId(),
-			CurrentStatus:       (int32)(*vehicle.CurrentStatus),
-			Timestamp:           vehicle.GetTimestamp(),
-			CongestionLevel:     (int32)(vehicle.GetCongestionLevel()),
-			OccupancyStatus:     (int32)(vehicle.GetOccupancyStatus()),
-		}
-		vp = append(vp, v)
+			CurrentStopSequence: e.Vehicle.GetCurrentStopSequence(),
+			StopID:              e.Vehicle.GetStopId(),
+			CurrentStatus:       (int32)(*e.Vehicle.CurrentStatus),
+			Timestamp:           e.Vehicle.GetTimestamp(),
+			CongestionLevel:     (int32)(e.Vehicle.GetCongestionLevel()),
+			OccupancyStatus:     (int32)(e.Vehicle.GetOccupancyStatus()),
+		})
 	}
 
 	return vp, nil

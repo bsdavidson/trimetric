@@ -122,7 +122,7 @@ class MapBox extends Component {
     }
   }
 
-  handleMapMouseDown(e) {
+  handleMapMouseDown() {
     this.props.onClearLocation();
   }
 

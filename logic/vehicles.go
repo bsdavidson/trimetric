@@ -210,7 +210,7 @@ func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b [
 // to a Producer
 func ProduceVehiclePositions(ctx context.Context, apiKey string, p Producer) error {
 	var lastQueryTimeMs int64
-	vehicleMap := map[*string]trimet.VehiclePosition{}
+	// vehicleMap := map[*string]trimet.VehiclePosition{}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 REQUEST_LOOP:
@@ -233,13 +233,13 @@ REQUEST_LOOP:
 
 		t := time.Now()
 		for _, tv := range vehicles {
-			if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
-				if tv.IsEqual(val) {
-					vehicleProducerDuplicatesTotal.Add(1)
-					continue
-				}
-			}
-			vehicleMap[tv.Vehicle.ID] = tv
+			// if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
+			// 	if tv.IsEqual(val) {
+			// 		vehicleProducerDuplicatesTotal.Add(1)
+			// 		continue
+			// 	}
+			// }
+			// vehicleMap[tv.Vehicle.ID] = tv
 
 			var b []byte
 			msgBytes, err := tv.MarshalMsg(b)
