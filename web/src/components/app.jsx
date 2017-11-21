@@ -70,7 +70,7 @@ export class App extends Component {
 
     let page;
     let markers = [];
-    if (this.selectedStop && this.props.zoom > 15.5) {
+    if (this.selectedStop && this.props.zoom > 13.5) {
       page = <ArrivalList key="transition-stops" stop={this.selectedStop} />;
     } else if (this.props.zoom > 15.5) {
       page = <StopList key="transition-stops" stops={stops} />;

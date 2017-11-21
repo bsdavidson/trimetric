@@ -1,10 +1,8 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/gob"
 	"fmt"
 	"log"
 	"time"
@@ -153,7 +151,6 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.Veh
 
 // UpsertVehiclePosition updates/inserts a vehicle in the DB.
 func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) error {
-	log.Println("Called CUpsertVehiclePosition", *v.Vehicle.ID)
 
 	lonLat := fmt.Sprintf("SRID=4326;POINT(%f %f)", v.Position.Longitude, v.Position.Latitude)
 	q := `
@@ -196,10 +193,13 @@ func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) er
 // updates the DB.
 func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b []byte) error {
 	var v trimet.VehiclePosition
-	err := gob.NewDecoder(bytes.NewReader(b)).Decode(&v)
+
+	o, err := v.UnmarshalMsg(b)
 	if err != nil {
+		log.Println(err, o)
 		return errors.WithStack(err)
 	}
+
 	if err := vd.UpsertVehiclePosition(&v); err != nil {
 		return errors.WithStack(err)
 	}
@@ -233,8 +233,6 @@ REQUEST_LOOP:
 
 		t := time.Now()
 		for _, tv := range vehicles {
-			var b bytes.Buffer
-			enc := gob.NewEncoder(&b)
 			if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
 				if tv.IsEqual(val) {
 					vehicleProducerDuplicatesTotal.Add(1)
@@ -242,18 +240,22 @@ REQUEST_LOOP:
 				}
 			}
 			vehicleMap[tv.Vehicle.ID] = tv
-			if err := enc.Encode(tv); err != nil {
+
+			var b []byte
+			msgBytes, err := tv.MarshalMsg(b)
+			if err != nil {
 				vehicleProducerEncodingErrorsTotal.Add(1)
 				log.Println(err)
 				continue REQUEST_LOOP
 			}
 			vehicleProducerMessagesTotal.Add(1)
-			err := p.Produce(b.Bytes())
+			err = p.Produce(msgBytes)
 			if err != nil {
 				vehicleProducerMessageErrorsTotal.Add(1)
 				log.Println(err)
 				continue REQUEST_LOOP
 			}
+
 		}
 		vehicleProducerProcessDurationSeconds.Observe(time.Since(t).Seconds())
 		lastQueryTimeMs = queryTime.Unix() * 1000

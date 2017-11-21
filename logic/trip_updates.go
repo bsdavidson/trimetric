@@ -1,10 +1,8 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/gob"
 	"log"
 	"time"
 
@@ -174,24 +172,26 @@ func (tuds *TripUpdateSQLDataset) UpdateTripUpdates(tus []trimet.TripUpdate) err
 
 // UpdateTripUpdateBytes reads bytes and updates the TripUpdates DB
 func (tuds *TripUpdateSQLDataset) UpdateTripUpdateBytes(ctx context.Context, b []byte) error {
-	var tu []trimet.TripUpdate
+	var tu trimet.TripUpdatesMsg
 
-	err := gob.NewDecoder(bytes.NewReader(b)).Decode(&tu)
+	_, err := tu.UnmarshalMsg(b)
 	if err != nil {
-		return errors.WithStack(err)
+		log.Println(err)
+		return err
 	}
 
-	if err = tuds.UpdateTripUpdates(tu); err != nil {
+	if err = tuds.UpdateTripUpdates(tu.TripUpdates); err != nil {
 		return err
 	}
 	return nil
 }
 
 // ProduceTripUpdates makes requests to the Trimet API and sends the results to
-// Kafka.
+// a Producer.
 func ProduceTripUpdates(ctx context.Context, apiKey string, p Producer) error {
 	ticker := time.NewTicker(tripUpdateDuration)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -204,17 +204,21 @@ func ProduceTripUpdates(ctx context.Context, apiKey string, p Producer) error {
 			log.Println(err)
 			continue
 		}
-
-		var b bytes.Buffer
-		if err := gob.NewEncoder(&b).Encode(tripUpdates); err != nil {
-			log.Println(err)
-			continue
+		tripUpdatesMsg := trimet.TripUpdatesMsg{
+			TripUpdates: tripUpdates,
 		}
 
-		err = p.Produce(b.Bytes())
+		var b []byte
+		msgBytes, err := tripUpdatesMsg.MarshalMsg(b)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
+
+		if err = p.Produce(msgBytes); err != nil {
+			log.Println(err)
+			continue
+		}
+
 	}
 }

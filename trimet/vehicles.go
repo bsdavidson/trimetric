@@ -1,5 +1,7 @@
 package trimet
 
+//go:generate msgp
+
 import (
 	"fmt"
 	"io/ioutil"
@@ -29,33 +31,33 @@ const (
 
 // VehiclePosition is the realtime position information for a given vehicle.
 type VehiclePosition struct {
-	Trip                TripDescriptor                         `json:"trip"`
-	Vehicle             VehicleDescriptor                      `json:"vehicle"`
-	Position            Position                               `json:"position"`
-	CurrentStopSequence uint32                                 `json:"current_stop_sequence"`
-	StopID              string                                 `json:"stop_id"`
-	CurrentStatus       gtfs.VehiclePosition_VehicleStopStatus `json:"current_status"`
-	Timestamp           uint64                                 `json:"timestamp"`
-	CongestionLevel     gtfs.VehiclePosition_CongestionLevel   `json:"congestion_level"`
-	OccupancyStatus     gtfs.VehiclePosition_OccupancyStatus   `json:"occupancy_status"`
-	RouteType           RouteType                              `json:"route_type"`
+	Trip                TripDescriptor    `json:"trip" msg:"trip"`
+	Vehicle             VehicleDescriptor `json:"vehicle" msg:"vehicle"`
+	Position            Position          `json:"position" msg:"position"`
+	CurrentStopSequence uint32            `json:"current_stop_sequence" msg:"current_stop_sequence"`
+	StopID              string            `json:"stop_id" msg:"stop_id"`
+	CurrentStatus       int32             `json:"current_status" msg:"current_status"`
+	Timestamp           uint64            `json:"timestamp" msg:"timestamp"`
+	CongestionLevel     int32             `json:"congestion_level" msg:"congestion_level"`
+	OccupancyStatus     int32             `json:"occupancy_status" msg:"occupancy_status"`
+	RouteType           RouteType         `json:"route_type" msg:"route_type"`
 }
 
 // VehicleDescriptor contains identification information for a vehicle
 // performing a trip.
 type VehicleDescriptor struct {
-	ID    *string `json:"id"`
-	Label *string `json:"label"`
+	ID    *string `json:"id" msg:"id"`
+	Label *string `json:"label" msg:"label"`
 	// LicensePlate *string `json:"license_plate"`
 }
 
 // Position is a geographic position of a vehicle.
 type Position struct {
-	Latitude  float32 `json:"lat"`
-	Longitude float32 `json:"lng"`
-	Bearing   float32 `json:"bearing"`
-	Odometer  float64 `json:"odometer"`
-	Speed     float32 `json:"speed"`
+	Latitude  float32 `json:"lat"  msg:"lat"`
+	Longitude float32 `json:"lng"  msg:"lng"`
+	Bearing   float32 `json:"bearing"  msg:"bearing"`
+	Odometer  float64 `json:"odometer"  msg:"odometer"`
+	Speed     float32 `json:"speed"  msg:"speed"`
 }
 
 // IsEqual returns true if the two vehicle positions are the same.
@@ -123,6 +125,7 @@ func RequestVehiclePositions(appID string, since int64) ([]VehiclePosition, erro
 				ID:    vehicle.GetVehicle().Id,
 				Label: vehicle.GetVehicle().Label,
 			},
+
 			Position: Position{
 				Latitude:  vehicle.GetPosition().GetLatitude(),
 				Longitude: vehicle.GetPosition().GetLongitude(),
@@ -132,10 +135,10 @@ func RequestVehiclePositions(appID string, since int64) ([]VehiclePosition, erro
 			},
 			CurrentStopSequence: vehicle.GetCurrentStopSequence(),
 			StopID:              vehicle.GetStopId(),
-			CurrentStatus:       vehicle.GetCurrentStatus(),
+			CurrentStatus:       (int32)(*vehicle.CurrentStatus),
 			Timestamp:           vehicle.GetTimestamp(),
-			CongestionLevel:     vehicle.GetCongestionLevel(),
-			OccupancyStatus:     vehicle.GetOccupancyStatus(),
+			CongestionLevel:     (int32)(vehicle.GetCongestionLevel()),
+			OccupancyStatus:     (int32)(vehicle.GetOccupancyStatus()),
 		}
 		vp = append(vp, v)
 	}

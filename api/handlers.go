@@ -111,7 +111,7 @@ func HandleTrimetArrivals(apiKey string) http.HandlerFunc {
 	}
 }
 
-// HandleVehiclePositions provides responses for the /api/v2/vehicles endpoint.
+// HandleVehiclePositions provides responses for the /api/v1/vehicles endpoint.
 // It returns a list of vehicles pulled from a local DB populated from a GTFS feed.
 func HandleVehiclePositions(vd logic.VehicleDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

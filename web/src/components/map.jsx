@@ -6,7 +6,7 @@ import DeckGL, {GeoJsonLayer, IconLayer} from "deck.gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import {DEFAULT_ZOOM} from "../store";
-import {LocationTypes} from "../actions";
+import {LocationTypes, clearLocation} from "../actions";
 import {TrimetricPropTypes} from "./prop_types";
 
 const IconMapping = {
@@ -42,6 +42,21 @@ function clamp(f) {
   return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
+export class CustomMapControls extends experimental.MapControls {
+  constructor(props) {
+    super(props);
+    this.props = props;
+    this.events = ["click", "mousedown"];
+  }
+
+  handleEvent(event) {
+    if (event.type === "mousedown") {
+      this.props.onMouseDown();
+    }
+    return super.handleEvent(event);
+  }
+}
+
 class MapBox extends Component {
   constructor(props) {
     super(props);
@@ -56,10 +71,15 @@ class MapBox extends Component {
       },
       settings: {
         dragPan: true
-      }
+      },
+      test: false
     };
     this.handleMapRef = this.handleMapRef.bind(this);
+    this.handleMapMouseDown = this.handleMapMouseDown.bind(this);
     this.handleViewportChange = this.handleViewportChange.bind(this);
+    this.mapControls = new CustomMapControls({
+      onMouseDown: this.handleMapMouseDown
+    });
   }
 
   handleMapRef(map) {
@@ -81,6 +101,10 @@ class MapBox extends Component {
       transitionInterpolator: experimental.viewportFlyToInterpolator,
       transitionDuration: 1200
     });
+
+    if (this.state.viewport.zoom < 15) {
+      this.props.onClearLocation();
+    }
   }
 
   handleViewportChange(viewport) {
@@ -96,6 +120,10 @@ class MapBox extends Component {
         zoom
       );
     }
+  }
+
+  handleMapMouseDown(e) {
+    this.props.onClearLocation();
   }
 
   render() {
@@ -138,7 +166,8 @@ class MapBox extends Component {
           transitionInterpolator={this.state.viewport.transitionInterpolator}
           transitionDuration={this.state.viewport.transitionDuration}
           zoom={this.state.viewport.zoom}
-          dragPan={this.state.settings.dragPan}>
+          dragPan={this.state.settings.dragPan}
+          mapControls={this.mapControls}>
           <DeckGL
             width={this.props.width}
             height={this.props.height}
@@ -161,6 +190,14 @@ MapBox.propTypes = {
   locationClicked: TrimetricPropTypes.locationClicked
 };
 
+function mapDispatchToProps(dispatch) {
+  return {
+    onClearLocation: () => {
+      dispatch(clearLocation());
+    }
+  };
+}
+
 function mapStateToProps(state) {
   return {
     location: state.location,
@@ -170,4 +207,4 @@ function mapStateToProps(state) {
   };
 }
 
-export default connect(mapStateToProps)(MapBox);
+export default connect(mapStateToProps, mapDispatchToProps)(MapBox);
