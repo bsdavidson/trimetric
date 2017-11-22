@@ -109,7 +109,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 			}
 		}()
 
-		if err := logic.ProduceVehiclePositions(ctx, strings.TrimSpace(apiKey), producer); err != nil {
+		if err := logic.ProduceVehiclePositions(ctx, trimet.BaseTrimetURL, strings.TrimSpace(apiKey), producer); err != nil {
 			log.Println(err)
 		}
 	}()

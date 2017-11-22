@@ -16,6 +16,7 @@ import (
 
 var (
 	vehicleProducerDuplicatesTotal        prometheus.Counter
+	vehicleProducerDuplicateMapSize       prometheus.Gauge
 	vehicleProducerEncodingErrorsTotal    prometheus.Counter
 	vehicleProducerMessageErrorsTotal     prometheus.Counter
 	vehicleProducerMessagesTotal          prometheus.Counter
@@ -30,6 +31,12 @@ func init() {
 		prometheus.CounterOpts{
 			Name: "trimetric_vehicle_producer_duplicates_total",
 			Help: "Total number of duplicate vehicle positions received",
+		},
+	)
+	vehicleProducerDuplicateMapSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "trimetric_vehicle_producer_duplicate_map_size",
+			Help: "Size of the map that tracks duplicate vehicles",
 		},
 	)
 	vehicleProducerEncodingErrorsTotal = prometheus.NewCounter(
@@ -76,6 +83,7 @@ func init() {
 	)
 
 	prometheus.MustRegister(vehicleProducerDuplicatesTotal)
+	prometheus.MustRegister(vehicleProducerDuplicateMapSize)
 	prometheus.MustRegister(vehicleProducerEncodingErrorsTotal)
 	prometheus.MustRegister(vehicleProducerMessageErrorsTotal)
 	prometheus.MustRegister(vehicleProducerMessagesTotal)
@@ -185,7 +193,6 @@ func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) er
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
 	return nil
 }
 
@@ -208,10 +215,10 @@ func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b [
 
 // ProduceVehiclePositions makes requests to the Trimet API and passes the result
 // to a Producer
-func ProduceVehiclePositions(ctx context.Context, apiKey string, p Producer) error {
+func ProduceVehiclePositions(ctx context.Context, baseURL string, apiKey string, p Producer) error {
 	var lastQueryTimeMs int64
-	// vehicleMap := map[*string]trimet.VehiclePosition{}
-	ticker := time.NewTicker(time.Second)
+	vehicleMap := map[string]uint64{}
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 REQUEST_LOOP:
 	for {
@@ -222,7 +229,7 @@ REQUEST_LOOP:
 		}
 
 		queryTime := time.Now()
-		vehicles, err := trimet.RequestVehiclePositions(apiKey, lastQueryTimeMs)
+		vehicles, err := trimet.RequestVehiclePositions(baseURL, apiKey, lastQueryTimeMs)
 		vehicleProducerRequestDurationSeconds.Observe(time.Since(queryTime).Seconds())
 		if err != nil {
 			vehicleProducerRequestErrorsTotal.Add(1)
@@ -233,13 +240,15 @@ REQUEST_LOOP:
 
 		t := time.Now()
 		for _, tv := range vehicles {
-			// if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
-			// 	if tv.IsEqual(val) {
-			// 		vehicleProducerDuplicatesTotal.Add(1)
-			// 		continue
-			// 	}
-			// }
-			// vehicleMap[tv.Vehicle.ID] = tv
+			if val, ok := vehicleMap[*tv.Vehicle.ID]; ok {
+				if tv.Timestamp == val {
+					vehicleProducerDuplicatesTotal.Add(1)
+					continue
+				}
+			}
+
+			vehicleMap[*tv.Vehicle.ID] = tv.Timestamp
+			vehicleProducerDuplicateMapSize.Set(float64(len(vehicleMap)))
 
 			var b []byte
 			msgBytes, err := tv.MarshalMsg(b)
@@ -257,6 +266,7 @@ REQUEST_LOOP:
 			}
 
 		}
+
 		vehicleProducerProcessDurationSeconds.Observe(time.Since(t).Seconds())
 		lastQueryTimeMs = queryTime.Unix() * 1000
 	}

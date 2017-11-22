@@ -61,7 +61,7 @@ func RequestTripUpdate(apiKey string) ([]TripUpdate, error) {
 	query := url.Values{}
 	query.Set("appID", apiKey)
 
-	resp, err := http.Get(fmt.Sprintf("%s?%s", TripUpdateURL, query.Encode()))
+	resp, err := http.Get(fmt.Sprintf("%s?%s", BaseTrimetURL+TripUpdateURL, query.Encode()))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

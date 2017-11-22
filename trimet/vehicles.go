@@ -60,40 +60,16 @@ type Position struct {
 	Speed     float32 `json:"speed"  msg:"speed"`
 }
 
-// IsEqual returns true if the two vehicle positions are the same.
-func (pvp *VehiclePosition) IsEqual(cvp VehiclePosition) bool {
-
-	if pvp.Trip != cvp.Trip {
-		return false
-	}
-	if pvp.CurrentStatus != cvp.CurrentStatus {
-		return false
-	}
-	if pvp.CurrentStopSequence != cvp.CurrentStopSequence {
-		return false
-	}
-	if pvp.Position != cvp.Position {
-		return false
-	}
-	if pvp.StopID != cvp.StopID {
-		return false
-	}
-	if pvp.Vehicle != cvp.Vehicle {
-		return false
-	}
-	return true
-}
-
 // RequestVehiclePositions contacts the Trimet Vehicles GTFS API and retrieves all vehicles
 // updated after the 'since' value. If no 'since' value is specified, it defaults
 // to retrieving them all since midnight of the service day.
-func RequestVehiclePositions(appID string, since int64) ([]VehiclePosition, error) {
+func RequestVehiclePositions(baseURL string, appID string, since int64) ([]VehiclePosition, error) {
 	query := url.Values{}
 	query.Set("appID", appID)
 	if since > 0 {
 		query.Set("since", strconv.FormatInt(since, 10))
 	}
-	resp, err := http.Get(fmt.Sprintf("%s?%s", VehiclesGTFS, query.Encode()))
+	resp, err := http.Get(fmt.Sprintf("%s?%s", baseURL+VehiclesGTFS, query.Encode()))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

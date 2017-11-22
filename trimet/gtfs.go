@@ -17,9 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tinylib/msgp/msgp"
-
 	"github.com/pkg/errors"
+	"github.com/tinylib/msgp/msgp"
 )
 
 func init() {
@@ -361,7 +360,7 @@ func RequestGTFSFile() (*zip.ReadCloser, error) {
 		f.Close()
 		os.Remove(f.Name())
 	}()
-	resp, err := http.Get(GTFS)
+	resp, err := http.Get(BaseTrimetURL + GTFS)
 	if err != nil {
 		return nil, err
 	}
