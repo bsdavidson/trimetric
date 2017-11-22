@@ -3,11 +3,12 @@ package trimet
 
 // Trimet API Routes
 const (
-	GTFS          = "https://developer.trimet.org/schedule/gtfs.zip"
-	Stops         = "https://developer.trimet.org/ws/V1/stops"
-	Arrivals      = "https://developer.trimet.org/ws/v2/arrivals"
-	Vehicles      = "https://developer.trimet.org/ws/v2/vehicles"
-	VehiclesGTFS  = "http://developer.trimet.org/ws/gtfs/VehiclePositions"
-	Routes        = "https://developer.trimet.org/ws/V1/routeConfig"
-	TripUpdateURL = "https://developer.trimet.org/ws/V1/TripUpdate"
+	BaseTrimetURL = "https://developer.trimet.org"
+	GTFS          = "/schedule/gtfs.zip"
+	Stops         = "/ws/V1/stops"
+	Arrivals      = "/ws/v2/arrivals"
+	Vehicles      = "/ws/v2/vehicles"
+	VehiclesGTFS  = "/ws/gtfs/VehiclePositions"
+	Routes        = "/ws/V1/routeConfig"
+	TripUpdateURL = "/ws/V1/TripUpdate"
 )

@@ -1,5 +1,7 @@
 package trimet
 
+//go:generate msgp
+
 import (
 	"archive/zip"
 	"bytes"
@@ -8,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,29 +18,55 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/tinylib/msgp/msgp"
 )
+
+func init() {
+	msgp.RegisterExtension(99, func() msgp.Extension { return new(Time) })
+}
 
 // Stop represents a single stop from a GTFS feed.
 type Stop struct {
-	ID                 string  `json:"id"`
-	Code               string  `json:"code"`
-	Name               string  `json:"name"`
-	Desc               string  `json:"desc"`
-	Lat                float64 `json:"lat"`
-	Lon                float64 `json:"lng"`
-	ZoneID             string  `json:"zone_id"`
-	URL                string  `json:"url"`
-	LocationType       int     `json:"location_type"`
-	ParentStation      string  `json:"parent_station"`
-	Direction          string  `json:"direction"`
-	Position           string  `json:"position"`
-	WheelchairBoarding int     `json:"wheelchair_boarding"`
+	ID                 string  `json:"id" msg:"id"`
+	Code               string  `json:"code" msg:"code"`
+	Name               string  `json:"name" msg:"name"`
+	Desc               string  `json:"desc" msg:"desc"`
+	Lat                float64 `json:"lat" msg:"lat"`
+	Lon                float64 `json:"lng" msg:"lng"`
+	ZoneID             string  `json:"zone_id" msg:"zone_id"`
+	URL                string  `json:"url" msg:"url"`
+	LocationType       int     `json:"location_type" msg:"location_type"`
+	ParentStation      string  `json:"parent_station" msg:"parent_station"`
+	Direction          string  `json:"direction" msg:"direction"`
+	Position           string  `json:"position" msg:"position"`
+	WheelchairBoarding int     `json:"wheelchair_boarding" msg:"wheelchair_boarding"`
 }
 
 // Time is represented in the GTFS feeds as a duration of time since midnight.
 // Note that for trips that start the previous day and end past midnight, Time
 // can go past 24:00:00.
 type Time time.Duration
+
+func (i *Time) ExtensionType() int8 {
+	log.Println("Extension called")
+	return 99
+}
+func (i *Time) Len() int {
+	return i.Len()
+}
+func (i *Time) MarshalBinaryTo(b []byte) error {
+	msgp.AppendInt64(b, int64(*i))
+	return nil
+}
+
+func (i *Time) UnmarshalBinary(b []byte) error {
+	n, _, err := msgp.ReadInt64Bytes(b)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	*i = Time(n)
+	return nil
+}
 
 // Scan converts a SQL interval into a Time object.
 func (i *Time) Scan(src interface{}) error {
@@ -88,52 +117,52 @@ func (i *Time) UnmarshalText(b []byte) error {
 
 // StopTime is a single stop time from a GTFS feed.
 type StopTime struct {
-	TripID            string   `json:"trip_id"`
-	ArrivalTime       *Time    `json:"arrival_time"`
-	DepartureTime     *Time    `json:"departure_time"`
-	StopID            string   `json:"stop_id"`
-	StopSequence      int      `json:"stop_sequence"`
-	StopHeadsign      *string  `json:"stop_headsign"`
-	PickupType        int      `json:"pickup_type"`
-	DropOffType       int      `json:"drop_off_type"`
-	ShapeDistTraveled *float64 `json:"shape_dist_traveled"`
-	Timepoint         *int     `json:"timepoint"`
-	ContinuousDropOff int      `json:"continuous_drop_off"`
-	ContinuousPickup  int      `json:"continuous_pickup"`
+	TripID            string   `json:"trip_id" msg:"trip_id"`
+	ArrivalTime       *Time    `json:"arrival_time" msg:"arrival_time,extension"`
+	DepartureTime     *Time    `json:"departure_time" msg:"departure_time,extension"`
+	StopID            string   `json:"stop_id" msg:"stop_id"`
+	StopSequence      int      `json:"stop_sequence" msg:"stop_sequence"`
+	StopHeadsign      *string  `json:"stop_headsign" msg:"stop_headsign"`
+	PickupType        int      `json:"pickup_type" msg:"pickup_type"`
+	DropOffType       int      `json:"drop_off_type" msg:"drop_off_type"`
+	ShapeDistTraveled *float64 `json:"shape_dist_traveled" msg:"shape_dist_traveled"`
+	Timepoint         *int     `json:"timepoint" msg:"timepoint"`
+	ContinuousDropOff int      `json:"continuous_drop_off" msg:"continuous_drop_off"`
+	ContinuousPickup  int      `json:"continuous_pickup" msg:"continuous_pickup"`
 }
 
 // Route represents a single route from a GTFS feed.
 type Route struct {
-	RouteID   string `json:"id"`
-	AgencyID  string `json:"agency_id"`
-	ShortName string `json:"short_name"`
-	LongName  string `json:"long_name"`
-	Type      int    `json:"type"`
-	URL       string `json:"url"`
-	Color     string `json:"color"`
-	TextColor string `json:"text_color"`
-	SortOrder int    `json:"sort_order"`
+	RouteID   string `json:"id" msg:"id"`
+	AgencyID  string `json:"agency_id" msg:"agency_id"`
+	ShortName string `json:"short_name" msg:"short_name"`
+	LongName  string `json:"long_name" msg:"long_name"`
+	Type      int    `json:"type" msg:"type"`
+	URL       string `json:"url" msg:"url"`
+	Color     string `json:"color" msg:"color"`
+	TextColor string `json:"text_color" msg:"text_color"`
+	SortOrder int    `json:"sort_order" msg:"sort_order"`
 }
 
 // Trip ...
 type Trip struct {
-	ID                   string  `json:"id"`
-	RouteID              string  `json:"route_id"`
-	ServiceID            string  `json:"service_id"`
-	DirectionID          *int    `json:"direction_id"`
-	BlockID              *string `json:"block_id"`
-	ShapeID              *string `json:"shape_id"`
-	Headsign             *string `json:"headsign"`
-	ShortName            *string `json:"short_name"`
-	BikesAllowed         int     `json:"bikes_allowed"`
-	WheelchairAccessible int     `json:"wheelchair_accessible"`
+	ID                   string  `json:"id" msg:"id"`
+	RouteID              string  `json:"route_id" msg:"route_id"`
+	ServiceID            string  `json:"service_id" msg:"service_id"`
+	DirectionID          *int    `json:"direction_id" msg:"direction_id"`
+	BlockID              *string `json:"block_id" msg:"block_id"`
+	ShapeID              *string `json:"shape_id" msg:"shape_id"`
+	Headsign             *string `json:"headsign" msg:"headsign"`
+	ShortName            *string `json:"short_name" msg:"short_name"`
+	BikesAllowed         int     `json:"bikes_allowed" msg:"bikes_allowed"`
+	WheelchairAccessible int     `json:"wheelchair_accessible" msg:"wheelchair_accessible"`
 }
 
 // CalendarDate ...
 type CalendarDate struct {
-	ServiceID     string    `json:"service_id"`
-	Date          time.Time `json:"date"`
-	ExceptionType int       `json:"exception_type"`
+	ServiceID     string    `json:"service_id" msg:"service_id"`
+	Date          time.Time `json:"date" msg:"date"`
+	ExceptionType int       `json:"exception_type" msg:"exception_type"`
 }
 
 func parseDuration(s string) (*Time, error) {
@@ -331,7 +360,7 @@ func RequestGTFSFile() (*zip.ReadCloser, error) {
 		f.Close()
 		os.Remove(f.Name())
 	}()
-	resp, err := http.Get(GTFS)
+	resp, err := http.Get(BaseTrimetURL + GTFS)
 	if err != nil {
 		return nil, err
 	}
@@ -352,8 +381,8 @@ func RequestGTFSFile() (*zip.ReadCloser, error) {
 
 // CSV ...
 type CSV struct {
-	rc io.ReadCloser
-	cr *csv.Reader
+	rc io.ReadCloser `msg:"-"`
+	cr *csv.Reader   `msg:"-"`
 }
 
 func (c *CSV) Read() ([]string, error) {

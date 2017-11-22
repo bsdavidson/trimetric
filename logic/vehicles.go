@@ -1,19 +1,14 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/gob"
 	"fmt"
-	"io"
 	"log"
 	"time"
 
-	"github.com/Shopify/sarama"
 	"github.com/bsdavidson/trimetric/trimet"
 	postgis "github.com/cridenour/go-postgis"
-	"github.com/influxdata/influxdb/client/v2"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,6 +16,7 @@ import (
 
 var (
 	vehicleProducerDuplicatesTotal        prometheus.Counter
+	vehicleProducerDuplicateMapSize       prometheus.Gauge
 	vehicleProducerEncodingErrorsTotal    prometheus.Counter
 	vehicleProducerMessageErrorsTotal     prometheus.Counter
 	vehicleProducerMessagesTotal          prometheus.Counter
@@ -35,6 +31,12 @@ func init() {
 		prometheus.CounterOpts{
 			Name: "trimetric_vehicle_producer_duplicates_total",
 			Help: "Total number of duplicate vehicle positions received",
+		},
+	)
+	vehicleProducerDuplicateMapSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "trimetric_vehicle_producer_duplicate_map_size",
+			Help: "Size of the map that tracks duplicate vehicles",
 		},
 	)
 	vehicleProducerEncodingErrorsTotal = prometheus.NewCounter(
@@ -81,6 +83,7 @@ func init() {
 	)
 
 	prometheus.MustRegister(vehicleProducerDuplicatesTotal)
+	prometheus.MustRegister(vehicleProducerDuplicateMapSize)
 	prometheus.MustRegister(vehicleProducerEncodingErrorsTotal)
 	prometheus.MustRegister(vehicleProducerMessageErrorsTotal)
 	prometheus.MustRegister(vehicleProducerMessagesTotal)
@@ -90,12 +93,11 @@ func init() {
 	prometheus.MustRegister(vehicleProducerRequestItemsTotal)
 }
 
-const vehiclePositionsTopic = "vehicle_positions"
-
 // VehicleDataset provides methods to update and retrieve vehicle data
 type VehicleDataset interface {
 	FetchVehiclePositionsByIDs(ids []int) ([]trimet.VehiclePosition, error)
 	UpsertVehiclePosition(v *trimet.VehiclePosition) error
+	UpsertVehiclePositionBytes(ctx context.Context, b []byte) error
 }
 
 // VehicleSQLDataset wraps a DB instance that is used to store vehicle data
@@ -157,6 +159,7 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.Veh
 
 // UpsertVehiclePosition updates/inserts a vehicle in the DB.
 func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) error {
+
 	lonLat := fmt.Sprintf("SRID=4326;POINT(%f %f)", v.Position.Longitude, v.Position.Latitude)
 	q := `
 		INSERT INTO vehicle_positions (
@@ -190,27 +193,32 @@ func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) er
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
 	return nil
 }
 
-// ProduceVehiclePositions makes requests to the Trimet API and sends the results to
-// Kafka.
-func ProduceVehiclePositions(ctx context.Context, apiKey string, kafkaAddr string) error {
-	producer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
+// UpsertVehiclePositionBytes writes decodes bytes into VehiclePositions and
+// updates the DB.
+func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b []byte) error {
+	var v trimet.VehiclePosition
+
+	o, err := v.UnmarshalMsg(b)
 	if err != nil {
+		log.Println(err, o)
 		return errors.WithStack(err)
 	}
-	defer func() {
-		if err := producer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
 
-	var lastQueryTime time.Time
-	vehicleMap := map[*string]trimet.VehiclePosition{}
+	if err := vd.UpsertVehiclePosition(&v); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
 
-	ticker := time.NewTicker(time.Second)
+// ProduceVehiclePositions makes requests to the Trimet API and passes the result
+// to a Producer
+func ProduceVehiclePositions(ctx context.Context, baseURL string, apiKey string, p Producer) error {
+	var lastQueryTimeMs int64
+	vehicleMap := map[string]uint64{}
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 REQUEST_LOOP:
 	for {
@@ -221,7 +229,7 @@ REQUEST_LOOP:
 		}
 
 		queryTime := time.Now()
-		vehicles, err := trimet.RequestVehiclePositions(apiKey, lastQueryTime.Unix()*1000)
+		vehicles, err := trimet.RequestVehiclePositions(baseURL, apiKey, lastQueryTimeMs)
 		vehicleProducerRequestDurationSeconds.Observe(time.Since(queryTime).Seconds())
 		if err != nil {
 			vehicleProducerRequestErrorsTotal.Add(1)
@@ -230,101 +238,36 @@ REQUEST_LOOP:
 		}
 		vehicleProducerRequestItemsTotal.Add(float64(len(vehicles)))
 
-		var b bytes.Buffer
-		enc := gob.NewEncoder(&b)
 		t := time.Now()
 		for _, tv := range vehicles {
-			if val, ok := vehicleMap[tv.Vehicle.ID]; ok {
-				if tv.IsEqual(val) {
+			if val, ok := vehicleMap[*tv.Vehicle.ID]; ok {
+				if tv.Timestamp == val {
 					vehicleProducerDuplicatesTotal.Add(1)
 					continue
 				}
 			}
-			vehicleMap[tv.Vehicle.ID] = tv
-			if err := enc.Encode(tv); err != nil {
+
+			vehicleMap[*tv.Vehicle.ID] = tv.Timestamp
+			vehicleProducerDuplicateMapSize.Set(float64(len(vehicleMap)))
+
+			var b []byte
+			msgBytes, err := tv.MarshalMsg(b)
+			if err != nil {
 				vehicleProducerEncodingErrorsTotal.Add(1)
 				log.Println(err)
 				continue REQUEST_LOOP
 			}
 			vehicleProducerMessagesTotal.Add(1)
-			_, _, err := producer.SendMessage(&sarama.ProducerMessage{
-				Topic: vehiclePositionsTopic,
-				Value: sarama.ByteEncoder(b.Bytes()),
-			})
+			err = p.Produce(msgBytes)
 			if err != nil {
 				vehicleProducerMessageErrorsTotal.Add(1)
 				log.Println(err)
 				continue REQUEST_LOOP
 			}
+
 		}
+
 		vehicleProducerProcessDurationSeconds.Observe(time.Since(t).Seconds())
-		lastQueryTime = queryTime
-	}
-}
-
-// ConsumeVehiclePositions monitors the Kafka 'vehicles' topic for new messages and
-// writes them to a DB.
-func ConsumeVehiclePositions(ctx context.Context, vd VehicleDataset, influxClient client.Client, kafkaAddr string) error {
-	config := sarama.NewConfig()
-	config.Consumer.Return.Errors = true
-	consumer, err := sarama.NewConsumer([]string{kafkaAddr}, config)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer func() {
-		if err := consumer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	partitionConsumer, err := consumer.ConsumePartition(vehiclePositionsTopic, 0, sarama.OffsetNewest)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	defer func() {
-		if err := partitionConsumer.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	go func() {
-		for err := range partitionConsumer.Errors() {
-			log.Println(err, err.Partition, err.Topic)
-		}
-	}()
-
-MESSAGE:
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case msg := <-partitionConsumer.Messages():
-			var b bytes.Buffer
-			var v trimet.VehiclePosition
-
-			decoder := gob.NewDecoder(&b)
-			_, err := b.Write(msg.Value)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-		DECODE:
-			for {
-				err = decoder.Decode(&v)
-				if err == io.EOF {
-					break DECODE
-				} else if err != nil {
-					log.Println(err)
-					continue MESSAGE
-				}
-			}
-			if err := vd.UpsertVehiclePosition(&v); err != nil {
-				log.Println(err)
-				break
-			}
-
-		}
-
+		lastQueryTimeMs = queryTime.Unix() * 1000
 	}
 }

@@ -25,7 +25,7 @@ func RequestArrivals(apiKey string, ids []int) ([]byte, error) {
 	query.Set("locIDs", strings.Join(sids, ","))
 	query.Set("json", "true")
 
-	resp, err := http.Get(fmt.Sprintf("%s?%s", Arrivals, query.Encode()))
+	resp, err := http.Get(fmt.Sprintf("%s?%s", BaseTrimetURL+Arrivals, query.Encode()))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

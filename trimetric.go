@@ -98,7 +98,18 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	go func() {
 		defer cancel()
 		defer wg.Done()
-		if err := logic.ProduceVehiclePositions(ctx, strings.TrimSpace(apiKey), kafkaAddr); err != nil {
+		producer, err := logic.NewKafkaProducer(logic.VehiclePositionsTopic, []string{kafkaAddr})
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer func() {
+			if err := producer.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		if err := logic.ProduceVehiclePositions(ctx, trimet.BaseTrimetURL, strings.TrimSpace(apiKey), producer); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -106,7 +117,18 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	go func() {
 		defer cancel()
 		defer wg.Done()
-		if err := logic.ProduceTripUpdates(ctx, strings.TrimSpace(apiKey), influxClient, kafkaAddr); err != nil {
+		producer, err := logic.NewKafkaProducer(logic.TripUpdatesTopic, []string{kafkaAddr})
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer func() {
+			if err := producer.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		if err := logic.ProduceTripUpdates(ctx, strings.TrimSpace(apiKey), producer); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -116,7 +138,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	go func() {
 		defer cancel()
 		defer wg.Done()
-		if err := logic.ConsumeVehiclePositions(ctx, vds, influxClient, kafkaAddr); err != nil {
+		if err := logic.ConsumeKafkaTopic(ctx, vds.UpsertVehiclePositionBytes, logic.VehiclePositionsTopic, []string{kafkaAddr}); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -124,7 +146,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	go func() {
 		defer cancel()
 		defer wg.Done()
-		if err := logic.ConsumeTripUpdates(ctx, tuds, influxClient, kafkaAddr); err != nil {
+		if err := logic.ConsumeKafkaTopic(ctx, tuds.UpdateTripUpdateBytes, logic.TripUpdatesTopic, []string{kafkaAddr}); err != nil {
 			log.Println(err)
 		}
 	}()

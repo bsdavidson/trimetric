@@ -11,7 +11,7 @@ ifndef HOST
 	$(error HOST variable is required)
 endif
 	scp docker-compose.yml $(HOST):trimetric/docker-compose.yml
-	ssh $(HOST) 'cd trimetric && docker-compose pull api && docker-compose up -d --no-deps api'
+	ssh $(HOST) 'cd trimetric && docker-compose pull api && docker-compose rm -fs api && docker-compose up -d --no-deps api'
 
 dev:
 	docker-compose up
