@@ -128,7 +128,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 			}
 		}()
 
-		if err := logic.ProduceTripUpdates(ctx, strings.TrimSpace(apiKey), producer); err != nil {
+		if err := logic.ProduceTripUpdates(ctx, trimet.BaseTrimetURL, strings.TrimSpace(apiKey), producer); err != nil {
 			log.Println(err)
 		}
 	}()

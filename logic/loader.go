@@ -38,7 +38,7 @@ func PollGTFSData(ctx context.Context, ld LoaderDataset, redisPool *redis.Pool, 
 				log.Println(err)
 			}
 
-			if err := ld.LoadGTFSData(); err != nil {
+			if err := ld.LoadGTFSData(trimet.BaseTrimetURL); err != nil {
 				log.Println(err)
 			}
 
@@ -91,7 +91,7 @@ func bulkReplace(tx *sql.Tx, c *trimet.CSV, table string, columns []string, call
 
 // LoaderDataset provides a method to bulk load static GTFS data.
 type LoaderDataset interface {
-	LoadGTFSData() error
+	LoadGTFSData(baseURL string) error
 }
 
 // LoaderSQLDataset implements LoaderDataset for a SQL database.
@@ -106,9 +106,9 @@ type gtfsLoader struct {
 
 // LoadGTFSData downloads the lastes static GTFS data from Trimet, and
 // updates the GTFS data in the database.
-func (ld *LoaderSQLDataset) LoadGTFSData() error {
+func (ld *LoaderSQLDataset) LoadGTFSData(baseURL string) error {
 	log.Println("downloading GTFS data")
-	gtfsFile, err := trimet.RequestGTFSFile()
+	gtfsFile, err := trimet.RequestGTFSFile(baseURL)
 	if err != nil {
 		return err
 	}
