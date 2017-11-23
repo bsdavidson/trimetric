@@ -57,11 +57,11 @@ type TripUpdatesMsg struct {
 }
 
 // RequestTripUpdate makes a request to the trimet TripUpdate GTFS  API endpoint.
-func RequestTripUpdate(apiKey string) ([]TripUpdate, error) {
+func RequestTripUpdate(baseURL, apiKey string) ([]TripUpdate, error) {
 	query := url.Values{}
 	query.Set("appID", apiKey)
 
-	resp, err := http.Get(fmt.Sprintf("%s?%s", BaseTrimetURL+TripUpdateURL, query.Encode()))
+	resp, err := http.Get(fmt.Sprintf("%s?%s", baseURL+TripUpdateURL, query.Encode()))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

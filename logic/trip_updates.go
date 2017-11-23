@@ -188,7 +188,7 @@ func (tuds *TripUpdateSQLDataset) UpdateTripUpdateBytes(ctx context.Context, b [
 
 // ProduceTripUpdates makes requests to the Trimet API and sends the results to
 // a Producer.
-func ProduceTripUpdates(ctx context.Context, apiKey string, p Producer) error {
+func ProduceTripUpdates(ctx context.Context,baseURL string,  apiKey string, p Producer) error {
 	ticker := time.NewTicker(tripUpdateDuration)
 	defer ticker.Stop()
 
@@ -199,7 +199,7 @@ func ProduceTripUpdates(ctx context.Context, apiKey string, p Producer) error {
 		case <-ticker.C:
 		}
 
-		tripUpdates, err := trimet.RequestTripUpdate(apiKey)
+		tripUpdates, err := trimet.RequestTripUpdate(baseURL, apiKey)
 		if err != nil {
 			log.Println(err)
 			continue

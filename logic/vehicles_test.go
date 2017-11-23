@@ -90,10 +90,11 @@ func TestProduceVehicles(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 81, len(mp.bytes))
+
+	vds := VehicleSQLDataset{DB: db}
+
 	for _, b := range mp.bytes {
-		var vp trimet.VehiclePosition
-		_, err := vp.UnmarshalMsg(b)
+		err := vds.UpsertVehiclePositionBytes(ctx, b)
 		require.NoError(t, err)
 	}
-
 }

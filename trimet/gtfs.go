@@ -351,7 +351,7 @@ func NewStopTimeFromRow(row []string) (*StopTime, error) {
 
 // RequestGTFSFile makes a request to download the current GTFS data set from Trimet.
 // It returns an array of stops from the file.
-func RequestGTFSFile() (*zip.ReadCloser, error) {
+func RequestGTFSFile(baseURL string) (*zip.ReadCloser, error) {
 	f, err := ioutil.TempFile("", "tmp")
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating tmp file")
@@ -360,7 +360,7 @@ func RequestGTFSFile() (*zip.ReadCloser, error) {
 		f.Close()
 		os.Remove(f.Name())
 	}()
-	resp, err := http.Get(BaseTrimetURL + GTFS)
+	resp, err := http.Get(baseURL + GTFS)
 	if err != nil {
 		return nil, err
 	}
