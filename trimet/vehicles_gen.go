@@ -493,15 +493,6 @@ func (z *VehiclePosition) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
-		case "route_type":
-			{
-				var zcua int
-				zcua, err = dc.ReadInt()
-				z.RouteType = RouteType(zcua)
-			}
-			if err != nil {
-				return
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -514,9 +505,9 @@ func (z *VehiclePosition) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *VehiclePosition) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 10
+	// map header, size 9
 	// write "trip"
-	err = en.Append(0x8a, 0xa4, 0x74, 0x72, 0x69, 0x70)
+	err = en.Append(0x89, 0xa4, 0x74, 0x72, 0x69, 0x70)
 	if err != nil {
 		return err
 	}
@@ -596,24 +587,15 @@ func (z *VehiclePosition) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	// write "route_type"
-	err = en.Append(0xaa, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65)
-	if err != nil {
-		return err
-	}
-	err = en.WriteInt(int(z.RouteType))
-	if err != nil {
-		return
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *VehiclePosition) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 10
+	// map header, size 9
 	// string "trip"
-	o = append(o, 0x8a, 0xa4, 0x74, 0x72, 0x69, 0x70)
+	o = append(o, 0x89, 0xa4, 0x74, 0x72, 0x69, 0x70)
 	o, err = z.Trip.MarshalMsg(o)
 	if err != nil {
 		return
@@ -648,9 +630,6 @@ func (z *VehiclePosition) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "occupancy_status"
 	o = append(o, 0xb0, 0x6f, 0x63, 0x63, 0x75, 0x70, 0x61, 0x6e, 0x63, 0x79, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73)
 	o = msgp.AppendInt32(o, z.OccupancyStatus)
-	// string "route_type"
-	o = append(o, 0xaa, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65)
-	o = msgp.AppendInt(o, int(z.RouteType))
 	return
 }
 
@@ -658,13 +637,13 @@ func (z *VehiclePosition) MarshalMsg(b []byte) (o []byte, err error) {
 func (z *VehiclePosition) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
-	var zxhx uint32
-	zxhx, bts, err = msgp.ReadMapHeaderBytes(bts)
+	var zcua uint32
+	zcua, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	for zxhx > 0 {
-		zxhx--
+	for zcua > 0 {
+		zcua--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			return
@@ -715,15 +694,6 @@ func (z *VehiclePosition) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
-		case "route_type":
-			{
-				var zlqf int
-				zlqf, bts, err = msgp.ReadIntBytes(bts)
-				z.RouteType = RouteType(zlqf)
-			}
-			if err != nil {
-				return
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -737,6 +707,6 @@ func (z *VehiclePosition) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *VehiclePosition) Msgsize() (s int) {
-	s = 1 + 5 + z.Trip.Msgsize() + 8 + z.Vehicle.Msgsize() + 9 + z.Position.Msgsize() + 22 + msgp.Uint32Size + 8 + msgp.StringPrefixSize + len(z.StopID) + 15 + msgp.Int32Size + 10 + msgp.Uint64Size + 17 + msgp.Int32Size + 17 + msgp.Int32Size + 11 + msgp.IntSize
+	s = 1 + 5 + z.Trip.Msgsize() + 8 + z.Vehicle.Msgsize() + 9 + z.Position.Msgsize() + 22 + msgp.Uint32Size + 8 + msgp.StringPrefixSize + len(z.StopID) + 15 + msgp.Int32Size + 10 + msgp.Uint64Size + 17 + msgp.Int32Size + 17 + msgp.Int32Size
 	return
 }

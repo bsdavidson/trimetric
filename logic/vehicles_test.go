@@ -32,7 +32,6 @@ func (m *mockProducer) Produce(b []byte) error {
 }
 
 func loadVehicles(t *testing.T, db *sql.DB) []trimet.VehiclePosition {
-
 	f, err := os.Open("./testdata/vehicles.json")
 	require.NoError(t, err)
 
@@ -49,27 +48,44 @@ func loadVehicles(t *testing.T, db *sql.DB) []trimet.VehiclePosition {
 func TestFetchByIds(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-
+	now := uint64(time.Now().Unix())
 	vehicles := loadVehicles(t, db)
 	assert.Equal(t, 33, len(vehicles))
-
 	vds := VehicleSQLDataset{DB: db}
-
+	sv := make([]trimet.VehiclePosition, 2)
 	for _, v := range vehicles {
-		v.Timestamp = uint64(time.Now().Unix())
+		if *v.Vehicle.ID == "201" {
+			sv[0] = v
+		} else if *v.Vehicle.ID == "202" {
+			sv[1] = v
+		}
+		v.Timestamp = now
 		require.NoError(t, vds.UpsertVehiclePosition(&v))
 	}
 
-	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{201, 202, 204})
+	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{201, 202})
 	require.NoError(t, err)
+	assert.Equal(t, 2, len(newVehicles))
 
-	assert.Equal(t, 3, len(newVehicles))
+	for i, v := range newVehicles {
+		assert.Equal(t, *sv[i].Trip.RouteID, *v.Trip.RouteID)
+		assert.Equal(t, *sv[i].Trip.TripID, *v.Trip.TripID)
+		assert.Equal(t, *sv[i].Vehicle.ID, *v.Vehicle.ID)
+		assert.Equal(t, *sv[i].Vehicle.Label, *v.Vehicle.Label)
+		assert.Equal(t, sv[i].Position, v.Position)
+		assert.Equal(t, sv[i].CurrentStopSequence, v.CurrentStopSequence)
+		assert.Equal(t, sv[i].StopID, v.StopID)
+		assert.Equal(t, sv[i].CurrentStatus, v.CurrentStatus)
+		assert.Equal(t, now, v.Timestamp)
+		assert.Equal(t, sv[i].CongestionLevel, v.CongestionLevel)
+		assert.Equal(t, sv[i].OccupancyStatus, v.OccupancyStatus)
+	}
 }
 
 func TestProduceVehicles(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
-
+	now := uint64(time.Now().Unix())
 	ctx, cancel := context.WithCancel(context.Background())
 	var httpCalls int
 
@@ -86,15 +102,41 @@ func TestProduceVehicles(t *testing.T) {
 
 	mp := &mockProducer{T: t}
 
-	err = ProduceVehiclePositions(ctx, ts.URL, "123", mp)
+	err = ProduceVehiclePositions(ctx, mp, ts.URL, "123", time.Millisecond)
 	require.NoError(t, err)
 
-	assert.Equal(t, 81, len(mp.bytes))
+	assert.Equal(t, 82, len(mp.bytes))
 
 	vds := VehicleSQLDataset{DB: db}
 
+	var expected trimet.VehiclePosition
 	for _, b := range mp.bytes {
-		err := vds.UpsertVehiclePositionBytes(ctx, b)
+		vp := trimet.VehiclePosition{}
+		_, err := vp.UnmarshalMsg(b)
+		require.NoError(t, err)
+		vp.Timestamp = now
+		if *vp.Vehicle.ID == "3505" {
+			expected = vp
+		}
+		ob, err := vp.MarshalMsg([]byte{})
+		require.NoError(t, err)
+		err = vds.UpsertVehiclePositionBytes(ctx, ob)
 		require.NoError(t, err)
 	}
+
+	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{3505})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(newVehicles))
+
+	assert.Equal(t, *expected.Trip.RouteID, *newVehicles[0].Trip.RouteID)
+	assert.Equal(t, *expected.Trip.TripID, *newVehicles[0].Trip.TripID)
+	assert.Equal(t, *expected.Vehicle.ID, *newVehicles[0].Vehicle.ID)
+	assert.Equal(t, *expected.Vehicle.Label, *newVehicles[0].Vehicle.Label)
+	assert.Equal(t, expected.Position, newVehicles[0].Position)
+	assert.Equal(t, expected.CurrentStopSequence, newVehicles[0].CurrentStopSequence)
+	assert.Equal(t, expected.StopID, newVehicles[0].StopID)
+	assert.Equal(t, expected.CurrentStatus, newVehicles[0].CurrentStatus)
+	assert.Equal(t, now, newVehicles[0].Timestamp)
+	assert.Equal(t, expected.CongestionLevel, newVehicles[0].CongestionLevel)
+	assert.Equal(t, expected.OccupancyStatus, newVehicles[0].OccupancyStatus)
 }

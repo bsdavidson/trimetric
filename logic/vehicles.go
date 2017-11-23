@@ -93,9 +93,15 @@ func init() {
 	prometheus.MustRegister(vehicleProducerRequestItemsTotal)
 }
 
+// VehiclePositionWithRouteType adds routetype to identify the vehicle type
+type VehiclePositionWithRouteType struct {
+	trimet.VehiclePosition
+	RouteType trimet.RouteType `json:"route_type" msg:"route_type"`
+}
+
 // VehicleDataset provides methods to update and retrieve vehicle data
 type VehicleDataset interface {
-	FetchVehiclePositionsByIDs(ids []int) ([]trimet.VehiclePosition, error)
+	FetchVehiclePositionsByIDs(ids []int) ([]VehiclePositionWithRouteType, error)
 	UpsertVehiclePosition(v *trimet.VehiclePosition) error
 	UpsertVehiclePositionBytes(ctx context.Context, b []byte) error
 }
@@ -108,7 +114,7 @@ type VehicleSQLDataset struct {
 // FetchVehiclePositionsByIDs makes a query against the DB and retrieves a list of vehicle data.
 // If IDs are passed in, then vehicle data is restricted to those specific
 // vehicle IDs. Otherwise, all vehicles with a non-expired timestamp are returned.
-func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.VehiclePosition, error) {
+func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]VehiclePositionWithRouteType, error) {
 	q := `
 		SELECT
 			v.vehicle_id, v.vehicle_label, v.trip_id, v.route_id, v.position_bearing,
@@ -132,9 +138,9 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.Veh
 	}
 	defer rows.Close()
 
-	var vehicles []trimet.VehiclePosition
+	vehicles := []VehiclePositionWithRouteType{}
 	for rows.Next() {
-		var v trimet.VehiclePosition
+		var v VehiclePositionWithRouteType
 		var lonLat postgis.PointS
 		err := rows.Scan(
 			&v.Vehicle.ID, &v.Vehicle.Label, &v.Trip.TripID, &v.Trip.RouteID,
@@ -150,16 +156,11 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]trimet.Veh
 	if err := rows.Err(); err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if vehicles == nil {
-		vehicles = []trimet.VehiclePosition{}
-	}
-
 	return vehicles, nil
 }
 
 // UpsertVehiclePosition updates/inserts a vehicle in the DB.
 func (vd *VehicleSQLDataset) UpsertVehiclePosition(v *trimet.VehiclePosition) error {
-
 	lonLat := fmt.Sprintf("SRID=4326;POINT(%f %f)", v.Position.Longitude, v.Position.Latitude)
 	q := `
 		INSERT INTO vehicle_positions (
@@ -215,10 +216,10 @@ func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b [
 
 // ProduceVehiclePositions makes requests to the Trimet API and passes the result
 // to a Producer
-func ProduceVehiclePositions(ctx context.Context, baseURL string, apiKey string, p Producer) error {
+func ProduceVehiclePositions(ctx context.Context, p Producer, baseURL, apiKey string, delay time.Duration) error {
 	var lastQueryTimeMs int64
 	vehicleMap := map[string]uint64{}
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(delay)
 	defer ticker.Stop()
 REQUEST_LOOP:
 	for {

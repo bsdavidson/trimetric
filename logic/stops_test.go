@@ -20,19 +20,24 @@ func init() {
 }
 
 func setupTestDB(t *testing.T) *sql.DB {
-	setupDb, err := sql.Open("postgres", fmt.Sprintf("postgres://trimetric:example@%s/?sslmode=disable", postgresAddr))
-	require.NoError(t, err)
-	defer setupDb.Close()
-	require.NoError(t, setupDb.Ping())
-	_, err = setupDb.Exec("DROP DATABASE IF EXISTS test_trimetric")
-	require.NoError(t, err)
-	_, err = setupDb.Exec("CREATE DATABASE test_trimetric")
-	require.NoError(t, err)
-	setupDb.Close()
-
 	db, err := sql.Open("postgres", fmt.Sprintf("postgres://trimetric:example@%s/test_trimetric?sslmode=disable", postgresAddr))
 	require.NoError(t, err)
 	require.NoError(t, goose.Up(db, "../migrations"))
+	tables := []string{
+		"services",
+		"calendar_dates",
+		"routes",
+		"trips",
+		"stops",
+		"stop_times",
+		"vehicle_positions",
+		"trip_updates",
+		"stop_time_updates",
+	}
+	for _, tbl := range tables {
+		_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", tbl))
+		require.NoError(t, err)
+	}
 	return db
 }
 

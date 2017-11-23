@@ -40,7 +40,6 @@ type VehiclePosition struct {
 	Timestamp           uint64            `json:"timestamp" msg:"timestamp"`
 	CongestionLevel     int32             `json:"congestion_level" msg:"congestion_level"`
 	OccupancyStatus     int32             `json:"occupancy_status" msg:"occupancy_status"`
-	RouteType           RouteType         `json:"route_type" msg:"route_type"`
 }
 
 // VehicleDescriptor contains identification information for a vehicle
@@ -80,43 +79,43 @@ func RequestVehiclePositions(baseURL string, appID string, since int64) ([]Vehic
 	}
 
 	feed := gtfs.FeedMessage{}
-
 	err = proto.Unmarshal(body, &feed)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var vp []VehiclePosition
+	var vps []VehiclePosition
 	for _, e := range feed.Entity {
-		if e.Vehicle == nil || e.Vehicle.Trip == nil {
-			continue
-		}
-
-		vp = append(vp, VehiclePosition{
-			Trip: TripDescriptor{
-				TripID:  e.Vehicle.GetTrip().TripId,
-				RouteID: e.Vehicle.GetTrip().RouteId,
-			},
-			Vehicle: VehicleDescriptor{
-				ID:    e.Vehicle.GetVehicle().Id,
-				Label: e.Vehicle.GetVehicle().Label,
-			},
-
-			Position: Position{
-				Latitude:  e.Vehicle.GetPosition().GetLatitude(),
-				Longitude: e.Vehicle.GetPosition().GetLongitude(),
-				Bearing:   e.Vehicle.GetPosition().GetBearing(),
-				Odometer:  e.Vehicle.GetPosition().GetOdometer(),
-				Speed:     e.Vehicle.GetPosition().GetSpeed(),
-			},
+		vp := VehiclePosition{
 			CurrentStopSequence: e.Vehicle.GetCurrentStopSequence(),
 			StopID:              e.Vehicle.GetStopId(),
-			CurrentStatus:       (int32)(*e.Vehicle.CurrentStatus),
+			CurrentStatus:       (int32)(e.Vehicle.GetCurrentStatus()),
 			Timestamp:           e.Vehicle.GetTimestamp(),
 			CongestionLevel:     (int32)(e.Vehicle.GetCongestionLevel()),
 			OccupancyStatus:     (int32)(e.Vehicle.GetOccupancyStatus()),
-		})
+		}
+		if e.Vehicle.Trip != nil {
+			vp.Trip = TripDescriptor{
+				TripID:  e.Vehicle.Trip.TripId,
+				RouteID: e.Vehicle.Trip.RouteId,
+			}
+		}
+		if e.Vehicle.Vehicle != nil {
+			vp.Vehicle = VehicleDescriptor{
+				ID:    e.Vehicle.Vehicle.Id,
+				Label: e.Vehicle.Vehicle.Label,
+			}
+		}
+		if e.Vehicle.Position != nil {
+			vp.Position = Position{
+				Latitude:  e.Vehicle.Position.GetLatitude(),
+				Longitude: e.Vehicle.Position.GetLongitude(),
+				Bearing:   e.Vehicle.Position.GetBearing(),
+				Odometer:  e.Vehicle.Position.GetOdometer(),
+				Speed:     e.Vehicle.Position.GetSpeed(),
+			}
+		}
+		vps = append(vps, vp)
 	}
-
-	return vp, nil
+	return vps, nil
 }
