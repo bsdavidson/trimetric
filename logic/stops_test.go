@@ -24,15 +24,16 @@ func setupTestDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 	require.NoError(t, goose.Up(db, "../migrations"))
 	tables := []string{
-		"services",
 		"calendar_dates",
 		"routes",
-		"trips",
-		"stops",
-		"stop_times",
-		"vehicle_positions",
-		"trip_updates",
+		"services",
+		"shapes",
 		"stop_time_updates",
+		"stop_times",
+		"stops",
+		"trip_updates",
+		"trips",
+		"vehicle_positions",
 	}
 	for _, tbl := range tables {
 		_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", tbl))

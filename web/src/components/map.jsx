@@ -130,28 +130,64 @@ class MapBox extends Component {
     let zoom = this.state.viewport.zoom;
     let tween = zoom - 12;
 
-    const geoJsonLayer = new GeoJsonLayer({
-      id: "geojson-layer",
-      data: this.props.geoJsonData,
-      opacity: 1 - clamp(tween),
-      stroked: true,
-      filled: true,
-      pointRadiusScale:
-        696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
-      visible: tween < 1,
-      fp64: true
-    });
+    let layers = [];
 
-    const iconLayer = new IconLayer({
-      id: "icon-layer",
-      data: this.props.iconData,
-      iconAtlas: "/assets/sprites.png",
-      iconMapping: IconMapping,
-      visible: tween > 0,
-      opacity: 1,
-      fp64: true,
-      sizeScale: -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
-    });
+    if (this.props.geoJsonData) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "geojson-layer",
+          data: this.props.geoJsonData,
+          opacity: 1 - clamp(tween),
+          stroked: true,
+          filled: true,
+          pointRadiusScale:
+            696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
+          visible: tween < 1,
+          fp64: true
+        })
+      );
+    }
+
+    if (this.props.lineData) {
+      layers = layers.concat(
+        this.props.lineData.map((l, i) => {
+          return new GeoJsonLayer({
+            id: "geojson-line-layer" + i,
+            data: l,
+            getLineColor: () => {
+              if (l.color === "") {
+                return [0, 0, 0, 255];
+              }
+              let color = parseInt(l.color, 16);
+              return [
+                (color >> 16) & 255,
+                (color >> 8) & 255,
+                color & 255,
+                255
+              ];
+            },
+            lineWidthMinPixels: 4,
+            fp64: true
+          });
+        })
+      );
+    }
+
+    if (this.props.iconData) {
+      layers.push(
+        new IconLayer({
+          id: "icon-layer",
+          data: this.props.iconData,
+          iconAtlas: "/assets/sprites.png",
+          iconMapping: IconMapping,
+          visible: tween > 0,
+          opacity: 1,
+          fp64: true,
+          sizeScale:
+            -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
+        })
+      );
+    }
 
     return (
       <div id="mapbox" className="app-map">
@@ -174,7 +210,7 @@ class MapBox extends Component {
             latitude={this.state.viewport.latitude}
             longitude={this.state.viewport.longitude}
             zoom={this.state.viewport.zoom}
-            layers={[geoJsonLayer, iconLayer]}
+            layers={layers}
           />
         </InteractiveMap>
       </div>
@@ -203,7 +239,8 @@ function mapStateToProps(state) {
     location: state.location,
     locationClicked: state.locationClicked,
     geoJsonData: state.geoJsonData,
-    iconData: state.iconData
+    iconData: state.iconData,
+    lineData: state.lineData
   };
 }
 

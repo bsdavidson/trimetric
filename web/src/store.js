@@ -64,6 +64,24 @@ function iconData(state = [], action) {
   }
 }
 
+function lineData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_DATA:
+      return action.lineData;
+    default:
+      return state;
+  }
+}
+
+function routeData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_DATA:
+      return action.routeData;
+    default:
+      return state;
+  }
+}
+
 function location(state = DEFAULT_LOCATION, action) {
   switch (action.type) {
     case UPDATE_HOME_LOCATION:
@@ -123,6 +141,8 @@ export const reducer = combineReducers({
   boundingBox,
   geoJsonData,
   iconData,
+  lineData,
+  routeData,
   location,
   locationClicked,
   stops,

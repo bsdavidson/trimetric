@@ -417,7 +417,7 @@ func (z *Route) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *Stop) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *Shape) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
 	var zajw uint32
@@ -427,6 +427,226 @@ func (z *Stop) DecodeMsg(dc *msgp.Reader) (err error) {
 	}
 	for zajw > 0 {
 		zajw--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "id":
+			z.ID, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "pt_lat":
+			z.PointLat, err = dc.ReadFloat64()
+			if err != nil {
+				return
+			}
+		case "pt_lng":
+			z.PointLng, err = dc.ReadFloat64()
+			if err != nil {
+				return
+			}
+		case "pt_sequence":
+			z.PointSequence, err = dc.ReadInt()
+			if err != nil {
+				return
+			}
+		case "dist_traveled":
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					return
+				}
+				z.DistTraveled = nil
+			} else {
+				if z.DistTraveled == nil {
+					z.DistTraveled = new(float64)
+				}
+				*z.DistTraveled, err = dc.ReadFloat64()
+				if err != nil {
+					return
+				}
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *Shape) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 5
+	// write "id"
+	err = en.Append(0x85, 0xa2, 0x69, 0x64)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.ID)
+	if err != nil {
+		return
+	}
+	// write "pt_lat"
+	err = en.Append(0xa6, 0x70, 0x74, 0x5f, 0x6c, 0x61, 0x74)
+	if err != nil {
+		return err
+	}
+	err = en.WriteFloat64(z.PointLat)
+	if err != nil {
+		return
+	}
+	// write "pt_lng"
+	err = en.Append(0xa6, 0x70, 0x74, 0x5f, 0x6c, 0x6e, 0x67)
+	if err != nil {
+		return err
+	}
+	err = en.WriteFloat64(z.PointLng)
+	if err != nil {
+		return
+	}
+	// write "pt_sequence"
+	err = en.Append(0xab, 0x70, 0x74, 0x5f, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return err
+	}
+	err = en.WriteInt(z.PointSequence)
+	if err != nil {
+		return
+	}
+	// write "dist_traveled"
+	err = en.Append(0xad, 0x64, 0x69, 0x73, 0x74, 0x5f, 0x74, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x64)
+	if err != nil {
+		return err
+	}
+	if z.DistTraveled == nil {
+		err = en.WriteNil()
+		if err != nil {
+			return
+		}
+	} else {
+		err = en.WriteFloat64(*z.DistTraveled)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *Shape) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 5
+	// string "id"
+	o = append(o, 0x85, 0xa2, 0x69, 0x64)
+	o = msgp.AppendString(o, z.ID)
+	// string "pt_lat"
+	o = append(o, 0xa6, 0x70, 0x74, 0x5f, 0x6c, 0x61, 0x74)
+	o = msgp.AppendFloat64(o, z.PointLat)
+	// string "pt_lng"
+	o = append(o, 0xa6, 0x70, 0x74, 0x5f, 0x6c, 0x6e, 0x67)
+	o = msgp.AppendFloat64(o, z.PointLng)
+	// string "pt_sequence"
+	o = append(o, 0xab, 0x70, 0x74, 0x5f, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65)
+	o = msgp.AppendInt(o, z.PointSequence)
+	// string "dist_traveled"
+	o = append(o, 0xad, 0x64, 0x69, 0x73, 0x74, 0x5f, 0x74, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x64)
+	if z.DistTraveled == nil {
+		o = msgp.AppendNil(o)
+	} else {
+		o = msgp.AppendFloat64(o, *z.DistTraveled)
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *Shape) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zwht uint32
+	zwht, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zwht > 0 {
+		zwht--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "id":
+			z.ID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "pt_lat":
+			z.PointLat, bts, err = msgp.ReadFloat64Bytes(bts)
+			if err != nil {
+				return
+			}
+		case "pt_lng":
+			z.PointLng, bts, err = msgp.ReadFloat64Bytes(bts)
+			if err != nil {
+				return
+			}
+		case "pt_sequence":
+			z.PointSequence, bts, err = msgp.ReadIntBytes(bts)
+			if err != nil {
+				return
+			}
+		case "dist_traveled":
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.DistTraveled = nil
+			} else {
+				if z.DistTraveled == nil {
+					z.DistTraveled = new(float64)
+				}
+				*z.DistTraveled, bts, err = msgp.ReadFloat64Bytes(bts)
+				if err != nil {
+					return
+				}
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *Shape) Msgsize() (s int) {
+	s = 1 + 3 + msgp.StringPrefixSize + len(z.ID) + 7 + msgp.Float64Size + 7 + msgp.Float64Size + 12 + msgp.IntSize + 14
+	if z.DistTraveled == nil {
+		s += msgp.NilSize
+	} else {
+		s += msgp.Float64Size
+	}
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *Stop) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zhct uint32
+	zhct, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zhct > 0 {
+		zhct--
 		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
 			return
@@ -680,13 +900,13 @@ func (z *Stop) MarshalMsg(b []byte) (o []byte, err error) {
 func (z *Stop) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
-	var zwht uint32
-	zwht, bts, err = msgp.ReadMapHeaderBytes(bts)
+	var zcua uint32
+	zcua, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	for zwht > 0 {
-		zwht--
+	for zcua > 0 {
+		zcua--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			return
@@ -778,13 +998,13 @@ func (z *Stop) Msgsize() (s int) {
 func (z *StopTime) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
-	var zhct uint32
-	zhct, err = dc.ReadMapHeader()
+	var zxhx uint32
+	zxhx, err = dc.ReadMapHeader()
 	if err != nil {
 		return
 	}
-	for zhct > 0 {
-		zhct--
+	for zxhx > 0 {
+		zxhx--
 		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
 			return
@@ -1137,13 +1357,13 @@ func (z *StopTime) MarshalMsg(b []byte) (o []byte, err error) {
 func (z *StopTime) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
-	var zcua uint32
-	zcua, bts, err = msgp.ReadMapHeaderBytes(bts)
+	var zlqf uint32
+	zlqf, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	for zcua > 0 {
-		zcua--
+	for zlqf > 0 {
+		zlqf--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			return
@@ -1315,13 +1535,13 @@ func (z *StopTime) Msgsize() (s int) {
 func (z *Trip) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
-	var zxhx uint32
-	zxhx, err = dc.ReadMapHeader()
+	var zdaf uint32
+	zdaf, err = dc.ReadMapHeader()
 	if err != nil {
 		return
 	}
-	for zxhx > 0 {
-		zxhx--
+	for zdaf > 0 {
+		zdaf--
 		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
 			return
@@ -1634,13 +1854,13 @@ func (z *Trip) MarshalMsg(b []byte) (o []byte, err error) {
 func (z *Trip) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
-	var zlqf uint32
-	zlqf, bts, err = msgp.ReadMapHeaderBytes(bts)
+	var zpks uint32
+	zpks, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	for zlqf > 0 {
-		zlqf--
+	for zpks > 0 {
+		zpks--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			return

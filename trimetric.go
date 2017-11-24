@@ -79,6 +79,8 @@ func MigrateDB(db *sql.DB, path string, migrate bool) error {
 func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKey string, db *sql.DB, influxClient client.Client, kafkaAddr, redisAddr, webPath string) error {
 	vds := &logic.VehicleSQLDataset{DB: db}
 	sds := &logic.StopSQLDataset{DB: db}
+	shds := &logic.ShapeSQLDataset{DB: db}
+	rds := &logic.RouteSQLDataset{DB: db}
 	lds := &logic.LoaderSQLDataset{DB: db}
 	tuds := &logic.TripUpdateSQLDataset{DB: db}
 
@@ -170,6 +172,8 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	mux.HandleFunc("/api/v1/vehicles", api.HandleVehiclePositions(vds))
 	mux.HandleFunc("/api/v1/trimet/arrivals", api.HandleTrimetArrivals(apiKey))
 	mux.HandleFunc("/api/v1/arrivals", api.HandleArrivals(sds))
+	mux.HandleFunc("/api/v1/routes", api.HandleRoutes(rds))
+	mux.HandleFunc("/api/v1/shapes", api.HandleShapes(shds))
 	mux.HandleFunc("/api/v1/stops", api.HandleStops(sds))
 	mux.HandleFunc("/api/v1/trip", api.HandleTripUpdates(tuds))
 	mux.HandleFunc("/api/ws", api.HandleWSVehicles(vds, updateChan))

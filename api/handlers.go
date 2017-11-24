@@ -159,12 +159,29 @@ func HandleTripUpdates(tds logic.TripUpdatesDataset) http.HandlerFunc {
 	}
 }
 
+func parseArgs(argStr, sep string) []string {
+	argsSplit := strings.Split(argStr, sep)
+	var argsArr []string
+	if len(argsSplit) == 1 && argsSplit[0] == "" {
+		return nil
+	}
+
+	for _, a := range argsSplit {
+		if a != "" {
+			argsArr = append(argsArr, a)
+		}
+	}
+	if len(argsArr) == 0 {
+		return nil
+	}
+	return argsArr
+}
+
 // HandleArrivals returns a list of upcoming arrivals for a list of stops.
 func HandleArrivals(tds logic.StopDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		ids := strings.Split(r.URL.Query().Get("locIDs"), ",")
-		if len(ids) == 0 && ids[0] == "" {
+		ids := parseArgs(r.URL.Query().Get("locIDs"), ",")
+		if ids == nil {
 			http.Error(w, "error: a list of stop IDs are required", http.StatusBadRequest)
 			return
 		}
@@ -180,6 +197,50 @@ func HandleArrivals(tds logic.StopDataset) http.HandlerFunc {
 		}
 		if len(ar) == 0 {
 			log.Println("arrivals empty")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}
+}
+
+// HandleRoutes returns a list of routes
+func HandleRoutes(rds logic.RouteDataset) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		routes, err := rds.FetchRoutes()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		b, err := json.Marshal(routes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+
+	}
+}
+
+// HandleShapes returns a list of shapes
+func HandleShapes(sds logic.ShapeDataset) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		shapeIDs := parseArgs(r.URL.Query().Get("shape_ids"), ",")
+		routeIDs := parseArgs(r.URL.Query().Get("route_ids"), ",")
+		if shapeIDs == nil && routeIDs == nil {
+			http.Error(w, "must specify route_id or shape_id", http.StatusBadRequest)
+			return
+		}
+
+		shapes, err := sds.FetchShapes(routeIDs, shapeIDs)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		b, err := json.Marshal(shapes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(b)

@@ -11,8 +11,10 @@ const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
 
 const UPDATE_TIMEOUT = 1000;
 const API_ENDPOINTS = {
-  stops: "/api/v1/stops",
   arrivals: "/api/v1/arrivals",
+  shapes: "/api/v1/shapes",
+  stops: "/api/v1/stops",
+  routes: "/api/v1/routes",
   vehiclesGTFS: "/api/v1/vehicles"
 };
 
@@ -45,6 +47,8 @@ export class Trimet {
       dir0: {},
       dir1: {}
     };
+    this.shapesCache = {};
+    this.routesCache = {};
     this.store = store;
     this.fetch = _fetch;
     this.running = false;
@@ -82,6 +86,22 @@ export class Trimet {
       });
   }
 
+  fetchRoutes() {
+    if (this.routesCache.routes) {
+      return Promise.resolve(this.routesCache.routes);
+    }
+
+    return this.fetch(API_ENDPOINTS.routes)
+      .then(response => response.json())
+      .then(data => {
+        this.routesCache = {
+          routes: data
+        };
+
+        return data;
+      });
+  }
+
   // FIXME: Add protection against no returned Stops.
   fetchArrivals(stop) {
     if (!stop) {
@@ -103,16 +123,44 @@ export class Trimet {
     );
   }
 
+  fetchShapes() {
+    if (this.shapesCache.shapes) {
+      return Promise.resolve(this.shapesCache.shapes);
+    }
+
+    let shapesAPIURL =
+      API_ENDPOINTS.shapes +
+      "?" +
+      buildQuery({
+        route_ids: ["100", "90", "190", "290", "193", "194", "195", "200"]
+      });
+
+    return this.fetch(shapesAPIURL)
+      .then(response => response.json())
+      .then(data => {
+        this.shapesCache = {
+          shapes: data
+        };
+
+        return data;
+      });
+  }
+
   fetchData(lat, lng, bbox) {
-    let promises = [this.fetchStops(), this.fetchVehicles()];
+    let promises = [
+      this.fetchStops(),
+      this.fetchVehicles(),
+      this.fetchShapes(),
+      this.fetchRoutes()
+    ];
     if (this.selectedStop) {
       promises.push(this.fetchArrivals(this.selectedStop));
     }
 
     return Promise.all(promises).then(results => {
-      let [stops, vehicles, arrivals] = results;
+      let [stops, vehicles, shapes, routes, arrivals] = results;
 
-      return {stops, vehicles, arrivals: arrivals || []};
+      return {stops, vehicles, shapes, routes, arrivals: arrivals || []};
     });
   }
 
@@ -138,7 +186,6 @@ export class Trimet {
     let bbox = this.store.getState().boundingBox;
 
     let newData = this.fetchData(lat, lng, bbox);
-
     newData
       .then(data => {
         let geoJsonData = data.stops
@@ -178,10 +225,37 @@ export class Trimet {
           .concat(
             data.vehicles.map(v => ({
               position: [v.position.lng, v.position.lat, 10],
-              icon: getVehicleType(v.routeType),
+              icon: getVehicleType(v.route_type),
               size: 1.4
             }))
           );
+        let routeData = {};
+        data.routes.forEach(r => {
+          routeData[r.id] = r;
+        });
+
+        let routeLineIndexes = {};
+        let routeLines = [];
+        data.shapes.forEach(s => {
+          let idx = routeLineIndexes[s.route_id];
+          if (idx === undefined) {
+            idx = routeLines.length;
+            routeLineIndexes[s.route_id] = idx;
+            routeLines.push({
+              type: "MultiLineString",
+              color: routeData[s.route_id].color,
+              coordinates: [],
+              routeID: s.route_id
+            });
+          }
+          routeLines[idx].coordinates.push(
+            s.point.map(p => {
+              return [p.lng, p.lat];
+            })
+          );
+        });
+
+        // console.log(data.shapes.length, routeLines);
 
         this.store.dispatch(
           updateData(
@@ -189,7 +263,9 @@ export class Trimet {
             data.vehicles,
             data.arrivals,
             geoJsonData,
-            iconData
+            iconData,
+            routeLines,
+            routeData
           )
         );
         let lc = this.store.getState().locationClicked;

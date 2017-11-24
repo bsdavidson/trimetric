@@ -9,14 +9,24 @@ export const LocationTypes = {
   HOME: "HOME"
 };
 
-export function updateData(stops, vehicles, arrivals, geoJsonData, iconData) {
+export function updateData(
+  stops,
+  vehicles,
+  arrivals,
+  geoJsonData,
+  iconData,
+  lineData,
+  routeData
+) {
   return {
     type: UPDATE_DATA,
     stops,
     vehicles,
     arrivals,
     geoJsonData,
-    iconData
+    iconData,
+    lineData,
+    routeData
   };
 }
 

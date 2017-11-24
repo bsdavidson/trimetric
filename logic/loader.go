@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bsdavidson/trimetric/trimet"
@@ -14,6 +15,22 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
+
+var staticTables = []string{
+	"calendar_dates",
+	"routes",
+	"services",
+	"shapes",
+	"stop_times",
+	"stops",
+	"trips",
+}
+
+var realtimeTables = []string{
+	"stop_time_updates",
+	"trip_updates",
+	"vehicle_positions",
+}
 
 // PollGTFSData makes periodic queries to fetch static GTFS data from Trimet.
 // It stores a timestamp of the last query in Redis and will only download if it has
@@ -116,12 +133,18 @@ func (ld *LoaderSQLDataset) LoadGTFSData(baseURL string) error {
 
 	loaders := []gtfsLoader{
 		{
+			// This looks wrong, but it's not. We are loading calendar_dates.txt twice
+			// so we can populate a second table of unique service_ids.
 			filename:   "calendar_dates.txt",
 			loaderFunc: ld.LoadServices,
 		},
 		{
 			filename:   "calendar_dates.txt",
 			loaderFunc: ld.LoadCalendarDates,
+		},
+		{
+			filename:   "shapes.txt",
+			loaderFunc: ld.LoadShapes,
 		},
 		{
 			filename:   "routes.txt",
@@ -146,9 +169,7 @@ func (ld *LoaderSQLDataset) LoadGTFSData(baseURL string) error {
 		return errors.WithStack(err)
 	}
 
-	_, err = tx.Exec(`
-		TRUNCATE calendar_dates, routes, services, stops, stop_times, trips
-	`)
+	_, err = tx.Exec(fmt.Sprintf("TRUNCATE %s RESTART IDENTITY", strings.Join(staticTables, ", ")))
 	if err != nil {
 		return rollbackError(tx.Rollback(), err)
 	}
@@ -163,6 +184,7 @@ func (ld *LoaderSQLDataset) LoadGTFSData(baseURL string) error {
 		}
 		log.Printf("loaded %s", l.filename)
 	}
+
 	if err := tx.Commit(); err != nil {
 		return rollbackError(tx.Rollback(), err)
 	}
@@ -252,6 +274,30 @@ func (ld *LoaderSQLDataset) LoadServices(tx *sql.Tx, c *trimet.CSV) error {
 	return nil
 }
 
+// LoadShapes loads shapes.txt.
+func (ld *LoaderSQLDataset) LoadShapes(tx *sql.Tx, c *trimet.CSV) error {
+	cols := []string{"id", "pt_lon_lat", "pt_sequence", "dist_traveled"}
+	n, err := bulkReplace(tx, c, "shapes", cols, func(stmt *sql.Stmt, row []string) error {
+		sh, err := trimet.NewShapeFromRow(row)
+		if err != nil {
+			return err
+		}
+
+		lngLat := fmt.Sprintf("SRID=4326;POINT(%f %f)", sh.PointLng, sh.PointLat)
+		_, err = stmt.Exec(sh.ID, lngLat, sh.PointSequence, sh.DistTraveled)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Printf("processed %d rows", n)
+	return nil
+}
+
 // LoadStops loads stops.txt.
 func (ld *LoaderSQLDataset) LoadStops(tx *sql.Tx, c *trimet.CSV) error {
 	cols := []string{
@@ -259,19 +305,17 @@ func (ld *LoaderSQLDataset) LoadStops(tx *sql.Tx, c *trimet.CSV) error {
 		"location_type", "parent_station", "direction", "position",
 	}
 	n, err := bulkReplace(tx, c, "stops", cols, func(stmt *sql.Stmt, row []string) error {
-		locType, err := strconv.Atoi(row[8])
+		st, err := trimet.NewStopFromRow(row)
 		if err != nil {
 			return err
 		}
-
-		lonLat := fmt.Sprintf("SRID=4326;POINT(%s %s)", row[5], row[4])
+		lonLat := fmt.Sprintf("SRID=4326;POINT(%f %f)", st.Lon, st.Lat)
 		_, err = stmt.Exec(
-			row[0], row[1], row[2], row[3], lonLat, row[6], row[7], locType,
-			row[9], row[10], row[11])
+			st.ID, st.Code, st.Name, st.Desc, lonLat, st.ZoneID, st.URL,
+			st.LocationType, st.ParentStation, st.Direction, st.Position)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-
 		return nil
 	})
 	if err != nil {
