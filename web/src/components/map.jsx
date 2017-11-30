@@ -132,18 +132,32 @@ class MapBox extends Component {
 
     let layers = [];
 
-    if (this.props.geoJsonData) {
+    if (this.props.stopsPointData) {
       layers.push(
         new GeoJsonLayer({
-          id: "geojson-layer",
-          data: this.props.geoJsonData,
+          id: "stops-point-layer",
+          data: this.props.stopsPointData,
           opacity: 1 - clamp(tween),
           stroked: true,
           filled: true,
-          pointRadiusScale:
-            696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
+          pointRadiusScale: 40, //696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
           visible: tween < 1,
           fp64: true
+        })
+      );
+    }
+
+    if (this.props.stopsIconData) {
+      layers.push(
+        new IconLayer({
+          id: "stops-icon-layer",
+          data: this.props.stopsIconData,
+          iconAtlas: "/assets/sprites.png",
+          iconMapping: IconMapping,
+          visible: tween > 0,
+          opacity: 1,
+          fp64: true,
+          sizeScale: 40 // -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
         })
       );
     }
@@ -154,37 +168,40 @@ class MapBox extends Component {
           return new GeoJsonLayer({
             id: "geojson-line-layer" + i,
             data: l,
-            getLineColor: () => {
-              if (l.color === "") {
-                return [0, 0, 0, 255];
-              }
-              let color = parseInt(l.color, 16);
-              return [
-                (color >> 16) & 255,
-                (color >> 8) & 255,
-                color & 255,
-                255
-              ];
-            },
-            lineWidthMinPixels: 4,
+            getLineColor: () => l.color,
+            lineWidthMinPixels: l.width,
             fp64: true
           });
         })
       );
     }
 
-    if (this.props.iconData) {
+    if (this.props.vehiclesPointData) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "vehciles-point-layer",
+          data: this.props.vehiclesPointData,
+          opacity: 1 - clamp(tween),
+          stroked: true,
+          filled: true,
+          pointRadiusScale: 40, //696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
+          visible: tween < 1,
+          fp64: true
+        })
+      );
+    }
+
+    if (this.props.vehiclesIconData) {
       layers.push(
         new IconLayer({
-          id: "icon-layer",
-          data: this.props.iconData,
+          id: "vehicle-icon-layer",
+          data: this.props.vehiclesIconData,
           iconAtlas: "/assets/sprites.png",
           iconMapping: IconMapping,
           visible: tween > 0,
           opacity: 1,
           fp64: true,
-          sizeScale:
-            -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
+          sizeScale: 40 // -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
         })
       );
     }
@@ -238,8 +255,10 @@ function mapStateToProps(state) {
   return {
     location: state.location,
     locationClicked: state.locationClicked,
-    geoJsonData: state.geoJsonData,
-    iconData: state.iconData,
+    stopsPointData: state.stopsPointData,
+    stopsIconData: state.stopsIconData,
+    vehiclesPointData: state.vehiclesPointData,
+    vehiclesIconData: state.vehiclesIconData,
     lineData: state.lineData
   };
 }

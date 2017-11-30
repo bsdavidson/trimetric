@@ -135,8 +135,6 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 		}
 	}()
 
-	updateChan := make(chan trimet.VehiclePosition)
-
 	go func() {
 		defer cancel()
 		defer wg.Done()
@@ -173,10 +171,11 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	mux.HandleFunc("/api/v1/trimet/arrivals", api.HandleTrimetArrivals(apiKey))
 	mux.HandleFunc("/api/v1/arrivals", api.HandleArrivals(sds))
 	mux.HandleFunc("/api/v1/routes", api.HandleRoutes(rds))
+	mux.HandleFunc("/api/v1/routes/lines", api.HandleRouteLines(shds))
 	mux.HandleFunc("/api/v1/shapes", api.HandleShapes(shds))
 	mux.HandleFunc("/api/v1/stops", api.HandleStops(sds))
 	mux.HandleFunc("/api/v1/trip", api.HandleTripUpdates(tuds))
-	mux.HandleFunc("/api/ws", api.HandleWSVehicles(vds, updateChan))
+	mux.HandleFunc("/api/ws", api.HandleWSVehicles(vds, shds, sds, rds))
 	mux.Handle("/", http.FileServer(http.Dir(webPath)))
 	srv := &http.Server{Addr: addr, Handler: mux}
 	log.Printf("serving requests on %s", addr)

@@ -52,7 +52,8 @@ module.exports = {
   // },
   plugins: [
     new ExtractTextPlugin({filename: "bundle.css", allChunks: true}),
-    new DotenvPlugin()
+    new DotenvPlugin(),
+    new webpack.EnvironmentPlugin({NODE_ENV: "development"})
   ],
   output: {
     path: __dirname,

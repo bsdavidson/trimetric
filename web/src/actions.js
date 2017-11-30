@@ -1,6 +1,10 @@
-export const UPDATE_DATA = "UPDATE_DATA";
+export const UPDATE_ARRIVALS = "UPDATE_ARRIVALS";
+export const UPDATE_VEHICLES = "UPDATE_VEHICLES";
 export const UPDATE_VIEWPORT = "UPDATE_VIEWPORT";
 export const UPDATE_LOCATION = "UPDATE_LOCATION";
+export const UPDATE_LINES = "UPDATE_LINES";
+export const UPDATE_STOPS = "UPDATE_STOPS";
+export const UPDATE_ROUTES = "UPDATE_ROUTES";
 export const UPDATE_HOME_LOCATION = "UPDATE_HOME_LOCATION";
 
 export const LocationTypes = {
@@ -9,24 +13,42 @@ export const LocationTypes = {
   HOME: "HOME"
 };
 
-export function updateData(
-  stops,
-  vehicles,
-  arrivals,
-  geoJsonData,
-  iconData,
-  lineData,
-  routeData
-) {
+export function updateVehicles(vehicles, vehiclesPointData, vehiclesIconData) {
   return {
-    type: UPDATE_DATA,
-    stops,
+    type: UPDATE_VEHICLES,
     vehicles,
-    arrivals,
-    geoJsonData,
-    iconData,
-    lineData,
-    routeData
+    vehiclesPointData,
+    vehiclesIconData
+  };
+}
+
+export function updateArrivals(arrivals) {
+  return {
+    type: UPDATE_ARRIVALS,
+    arrivals
+  };
+}
+
+export function updateRoutes(routes) {
+  return {
+    type: UPDATE_ROUTES,
+    routes
+  };
+}
+
+export function updateLines(lineData) {
+  return {
+    type: UPDATE_LINES,
+    lineData
+  };
+}
+
+export function updateStops(stops, stopsPointData, stopsIconData) {
+  return {
+    type: UPDATE_STOPS,
+    stops,
+    stopsPointData,
+    stopsIconData
   };
 }
 

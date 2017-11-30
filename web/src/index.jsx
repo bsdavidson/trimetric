@@ -16,4 +16,3 @@ window.addEventListener("load", () => {
     document.getElementById("app")
   );
 });
-// store.subscribe(render);

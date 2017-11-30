@@ -53,6 +53,8 @@ services:
     command: ["yarn", "run", "watch"]
     depends_on:
       - api
+    environment:
+      - NODE_ENV=development
     image: trimetric-web
     ports:
       - "8080:8080"

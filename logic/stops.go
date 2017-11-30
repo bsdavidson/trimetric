@@ -215,7 +215,7 @@ func (sd *StopSQLDataset) FetchArrivals(stopIDs []string) ([]Arrival, error) {
 		return nil, errors.WithStack(err)
 	}
 	defer rows.Close()
-	var arrivals []Arrival
+	arrivals := []Arrival{}
 
 	for rows.Next() {
 		var a Arrival

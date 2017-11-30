@@ -1,6 +1,5 @@
 import React, {Component} from "react";
 import ReactCSSTransitionGroup from "react-addons-css-transition-group";
-import {Marker} from "react-map-gl";
 import {connect} from "react-redux";
 import {withRouter} from "react-router-dom";
 
@@ -62,41 +61,28 @@ export class App extends Component {
   }
 
   render() {
-    let {location, stops} = this.props;
+    let {stops} = this.props;
 
     if (!stops) {
       return <div>No stops</div>;
     }
 
     let page;
-    let markers = [];
     if (this.selectedStop && this.props.zoom > 13.5) {
       page = <ArrivalList key="transition-stops" stop={this.selectedStop} />;
     } else if (this.props.zoom > 15.5) {
-      page = <StopList key="transition-stops" stops={stops} />;
+      page = <StopList key="transition-stops" />;
     } else {
       page = <Info key="transition-info" />;
     }
-
-    markers.push(
-      <Marker
-        key="home"
-        latitude={location.lat}
-        longitude={location.lng}
-        offsetLeft={-12}
-        offsetTop={-12}>
-        <span className="fui-user" />
-      </Marker>
-    );
 
     return (
       <div className="app">
         <Map
           onViewportChange={this.props.onViewportChange}
           width={this.state.mapWidth}
-          height={this.state.mapHeight}>
-          {markers}
-        </Map>
+          height={this.state.mapHeight}
+        />
         <ReactCSSTransitionGroup
           component="div"
           transitionName="page"
@@ -111,10 +97,7 @@ export class App extends Component {
 
 function mapStateToProps(state) {
   return {
-    location: state.location,
-    locationClicked: state.locationClicked,
     stops: state.stops,
-    queryTime: state.queryTime,
     vehicles: state.vehicles,
     zoom: state.zoom
   };

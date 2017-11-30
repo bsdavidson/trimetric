@@ -13,31 +13,50 @@ export class StopList extends React.Component {
     super(props);
 
     this.state = {
-      boundingBox: this.props.boundingBox
+      boundingBox: this.props.boundingBox,
+      stops: this.props.stops.filter(s =>
+        withinBoundingBox(s, this.props.boundingBox)
+      )
     };
 
     this.timeout = null;
     this.stopsInView = 0;
-
     this.handleCurrentLocationClick = this.handleCurrentLocationClick.bind(
       this
     );
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.boundingBox === this.state.boundingBox) {
+    if (
+      nextProps.boundingBox === this.state.boundingBox &&
+      nextProps.stops === this.props.stops
+    ) {
       return;
     }
+
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => {
       this.setState({
-        boundingBox: nextProps.boundingBox
+        boundingBox: nextProps.boundingBox,
+        stops: nextProps.stops.filter(s =>
+          withinBoundingBox(s, this.state.boundingBox)
+        )
       });
     }, 100);
   }
 
-  createStops(stops) {
-    return stops;
+  componentWillUnmount() {
+    clearTimeout(this.timeout);
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    if (
+      this.state.boundingBox === nextState.boundingBox &&
+      this.state.stops === nextState.stops
+    ) {
+      return false;
+    }
+    return true;
   }
 
   handleCurrentLocationClick() {
@@ -51,19 +70,17 @@ export class StopList extends React.Component {
   }
 
   render() {
-    let stops = this.props.stops.filter(s =>
-      withinBoundingBox(s, this.state.boundingBox)
-    );
     let stopItems;
-
-    if (stops.length > 100) {
+    if (this.state.stops.length > 100) {
       stopItems = (
         <div className="stop-list-item">
           Too many stops in view. Please zoom in.
         </div>
       );
     } else {
-      stopItems = stops.map(s => <StopListItem key={s.id} stop={s} />);
+      stopItems = this.state.stops.map(s => (
+        <StopListItem key={s.id} stop={s} />
+      ));
     }
 
     return (
@@ -75,7 +92,7 @@ export class StopList extends React.Component {
           onClick={this.handleCurrentLocationClick}>
           <span className="fui-location" />
         </div>
-        <h3>Visible Stops ({stops.length})</h3>
+        <h3>Visible Stops ({this.state.stops.length})</h3>
 
         <div className="stop-list-items">{stopItems}</div>
       </div>
@@ -89,7 +106,8 @@ StopList.propTypes = {
 
 function mapStateToProps(state) {
   return {
-    boundingBox: state.boundingBox
+    boundingBox: state.boundingBox,
+    stops: state.stops
   };
 }
 

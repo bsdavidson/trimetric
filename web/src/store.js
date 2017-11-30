@@ -2,10 +2,14 @@ import {createStore, combineReducers} from "redux";
 
 import {
   LocationTypes,
-  UPDATE_DATA,
-  UPDATE_VIEWPORT,
+  UPDATE_ARRIVALS,
   UPDATE_HOME_LOCATION,
-  UPDATE_LOCATION
+  UPDATE_LINES,
+  UPDATE_LOCATION,
+  UPDATE_ROUTES,
+  UPDATE_STOPS,
+  UPDATE_VEHICLES,
+  UPDATE_VIEWPORT
 } from "./actions";
 
 export const DEFAULT_LOCATION = {
@@ -30,7 +34,7 @@ export const DEFAULT_ZOOM = 11;
 
 function arrivals(state = [], action) {
   switch (action.type) {
-    case UPDATE_DATA:
+    case UPDATE_ARRIVALS:
       return action.arrivals;
     default:
       return state;
@@ -46,37 +50,10 @@ function boundingBox(state = DEFAULT_BOUNDING_BOX, action) {
   }
 }
 
-function geoJsonData(state = [], action) {
-  switch (action.type) {
-    case UPDATE_DATA:
-      return action.geoJsonData;
-    default:
-      return state;
-  }
-}
-
-function iconData(state = [], action) {
-  switch (action.type) {
-    case UPDATE_DATA:
-      return action.iconData;
-    default:
-      return state;
-  }
-}
-
 function lineData(state = [], action) {
   switch (action.type) {
-    case UPDATE_DATA:
+    case UPDATE_LINES:
       return action.lineData;
-    default:
-      return state;
-  }
-}
-
-function routeData(state = [], action) {
-  switch (action.type) {
-    case UPDATE_DATA:
-      return action.routeData;
     default:
       return state;
   }
@@ -100,10 +77,10 @@ function locationClicked(state = null, action) {
   }
 }
 
-function clickedStop(state = null, action) {
+function routes(state = [], action) {
   switch (action.type) {
-    case UPDATE_LOCATION:
-      return action.clickedStop;
+    case UPDATE_ROUTES:
+      return action.routes;
     default:
       return state;
   }
@@ -111,8 +88,26 @@ function clickedStop(state = null, action) {
 
 function stops(state = [], action) {
   switch (action.type) {
-    case UPDATE_DATA:
+    case UPDATE_STOPS:
       return action.stops;
+    default:
+      return state;
+  }
+}
+
+function stopsPointData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_STOPS:
+      return action.stopsPointData;
+    default:
+      return state;
+  }
+}
+
+function stopsIconData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_STOPS:
+      return action.stopsIconData;
     default:
       return state;
   }
@@ -120,8 +115,26 @@ function stops(state = [], action) {
 
 function vehicles(state = [], action) {
   switch (action.type) {
-    case UPDATE_DATA:
+    case UPDATE_VEHICLES:
       return action.vehicles;
+    default:
+      return state;
+  }
+}
+
+function vehiclesIconData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_VEHICLES:
+      return action.vehiclesIconData;
+    default:
+      return state;
+  }
+}
+
+function vehiclesPointData(state = [], action) {
+  switch (action.type) {
+    case UPDATE_VEHICLES:
+      return action.vehiclesPointData;
     default:
       return state;
   }
@@ -139,14 +152,16 @@ function zoom(state = DEFAULT_ZOOM, action) {
 export const reducer = combineReducers({
   arrivals,
   boundingBox,
-  geoJsonData,
-  iconData,
   lineData,
-  routeData,
   location,
   locationClicked,
+  routes,
   stops,
+  stopsIconData,
+  stopsPointData,
   vehicles,
+  vehiclesIconData,
+  vehiclesPointData,
   zoom
 });
 

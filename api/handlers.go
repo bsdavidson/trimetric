@@ -1,12 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/bsdavidson/trimetric/logic"
 	"github.com/bsdavidson/trimetric/trimet"
@@ -178,14 +181,14 @@ func parseArgs(argStr, sep string) []string {
 }
 
 // HandleArrivals returns a list of upcoming arrivals for a list of stops.
-func HandleArrivals(tds logic.StopDataset) http.HandlerFunc {
+func HandleArrivals(sds logic.StopDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ids := parseArgs(r.URL.Query().Get("locIDs"), ",")
+		ids := parseArgs(r.URL.Query().Get("stop_ids"), ",")
 		if ids == nil {
 			http.Error(w, "error: a list of stop IDs are required", http.StatusBadRequest)
 			return
 		}
-		ar, err := tds.FetchArrivals(ids)
+		ar, err := sds.FetchArrivals(ids)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -248,35 +251,122 @@ func HandleShapes(sds logic.ShapeDataset) http.HandlerFunc {
 	}
 }
 
-// HandleWSVehicles ...
-func HandleWSVehicles(vd logic.VehicleDataset, updateChan <-chan trimet.VehiclePosition) http.HandlerFunc {
+// HandleRouteLines returns a list of routelines
+func HandleRouteLines(sds logic.ShapeDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("websocket open")
+
+		lines, err := sds.FetchRouteShapes()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		b, err := json.Marshal(lines)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+
+	}
+}
+
+type wsMessage struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
+// HandleWSVehicles ...
+func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Print(err)
 			return
 		}
-		defer func() {
-			c.Close()
-			log.Println("websocket closed")
-		}()
+		defer c.Close()
 
-		for {
-			_, _, err := c.ReadMessage() // just reading in case we need to kill conn
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			select {
-			case v := <-updateChan:
-				if err := c.WriteJSON(v); err != nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go func() {
+			for {
+				_, _, err := c.ReadMessage() // just reading in case we need to kill conn
+				if err != nil {
+					cancel()
 					log.Println(err)
 					break
 				}
 			}
+		}()
+
+		wg := &sync.WaitGroup{}
+		wg.Add(3)
+		var stops []logic.StopWithDistance
+		go func() {
+			defer wg.Done()
+			var err error
+			stops, err = sds.FetchAllStops()
+			if err != nil {
+				log.Println(err)
+				cancel()
+			}
+		}()
+
+		var shapes []*logic.RouteShape
+		go func() {
+			defer wg.Done()
+			var err error
+			shapes, err = shds.FetchRouteShapes()
+			if err != nil {
+				log.Println(err)
+				cancel()
+			}
+		}()
+
+		var routes []trimet.Route
+		go func() {
+			defer wg.Done()
+			var err error
+			routes, err = rds.FetchRoutes()
+			if err != nil {
+				log.Println(err)
+				cancel()
+			}
+		}()
+
+		wg.Wait()
+		if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
+			log.Println(err)
+			return
+		}
+		if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
+			log.Println(err)
+			return
+		}
+		if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
+			log.Println(err)
+			return
 		}
 
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				break LOOP
+			case <-ticker.C:
+			}
+			vehicles, err := vds.FetchVehiclePositionsByIDs(nil)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
+				log.Println(err)
+				continue
+			}
+		}
 	}
 }

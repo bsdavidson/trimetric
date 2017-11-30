@@ -16,6 +16,7 @@ WORKDIR /opt/trimetric/
 
 COPY . /opt/trimetric/
 
+ENV NODE_ENV=production
 RUN yarn dist
 
 EXPOSE 8080 9876

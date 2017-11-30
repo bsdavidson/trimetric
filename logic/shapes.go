@@ -11,6 +11,7 @@ import (
 
 // ShapeDataset provides methods to query and update a database table of Shapes
 type ShapeDataset interface {
+	FetchRouteShapes() ([]*RouteShape, error)
 	FetchShapes(routeIDS, shapeIDs []string) ([]Shape, error)
 }
 
@@ -22,9 +23,10 @@ type ShapeSQLDataset struct {
 
 // Shape ...
 type Shape struct {
-	ID      string  `json:"id"`
-	RouteID string  `json:"route_id"`
-	Point   []Point `json:"point"`
+	ID          string  `json:"id"`
+	DirectionID int     `json:"direction_id"`
+	RouteID     string  `json:"route_id"`
+	Point       []Point `json:"point"`
 }
 
 // Point ...
@@ -38,16 +40,15 @@ type Point struct {
 func (sd *ShapeSQLDataset) FetchShapes(routeIDs, shapeIDs []string) ([]Shape, error) {
 	// TODO: Query BAsed on trip_IDS
 	q := `
-		SELECT id, pt_lon_lat, dist_traveled, route_shapes.route_id
+		SELECT id, pt_lon_lat, dist_traveled, route_shapes.route_id, route_shapes.direction_id
 		FROM shapes
 	`
-
 	var args []interface{}
 
 	if len(routeIDs) > 0 {
 		q += `
 			JOIN (
-				SELECT DISTINCT trips.shape_id, routes.id as route_id
+				SELECT DISTINCT trips.shape_id, routes.id as route_id, trips.direction_id as direction_id
 				FROM routes
 				JOIN trips ON trips.route_id = routes.id
 				AND routes.id = ANY($1)
@@ -74,9 +75,10 @@ func (sd *ShapeSQLDataset) FetchShapes(routeIDs, shapeIDs []string) ([]Shape, er
 	for rows.Next() {
 		var id string
 		var routeID string
+		var direction int
 		var p Point
 		var lonLat postgis.PointS
-		err := rows.Scan(&id, &lonLat, &p.DistTraveled, &routeID)
+		err := rows.Scan(&id, &lonLat, &p.DistTraveled, &routeID, &direction)
 		if err != nil {
 			return nil, err
 		}
@@ -84,11 +86,12 @@ func (sd *ShapeSQLDataset) FetchShapes(routeIDs, shapeIDs []string) ([]Shape, er
 		p.Lng = lonLat.X
 
 		if lastShape == nil || lastShape.ID != id {
-			shapes = append(shapes, Shape{ID: id, RouteID: routeID})
+			shapes = append(shapes, Shape{ID: id, RouteID: routeID, DirectionID: direction})
 			lastShape = &shapes[len(shapes)-1]
 		}
 		lastShape.Point = append(lastShape.Point, p)
 
 	}
+
 	return shapes, nil
 }
