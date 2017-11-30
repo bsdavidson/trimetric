@@ -20,6 +20,7 @@ module.exports = {
     assets: true
   },
   module: {
+    noParse: /(mapbox-gl)\.js$/,
     rules: [
       {
         test: /\.jsx?$/,
@@ -53,7 +54,10 @@ module.exports = {
   plugins: [
     new ExtractTextPlugin({filename: "bundle.css", allChunks: true}),
     new DotenvPlugin(),
-    new webpack.EnvironmentPlugin({NODE_ENV: "development"})
+    new webpack.EnvironmentPlugin({NODE_ENV: "development"}),
+    new webpack.optimize.UglifyJsPlugin({
+      sourceMap: true
+    })
   ],
   output: {
     path: __dirname,
