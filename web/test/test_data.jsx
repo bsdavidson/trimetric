@@ -1,7 +1,7 @@
 import {assert} from "chai";
 import sinon from "sinon";
-import {Trimet, getVehicleType} from "../src/data";
-
+import {Trimet} from "../src/data";
+import {getVehicleType} from "../src/store";
 import {getMockStopsResponse} from "./mock_data";
 
 let sandbox = sinon.createSandbox();

@@ -4,7 +4,7 @@ import {connect} from "react-redux";
 
 import {TrimetricPropTypes} from "./prop_types";
 import {degreeToCompass} from "../helpers/directions";
-import {updateLocation, LocationTypes} from "../actions";
+import {clearLocation, updateLocation, LocationTypes} from "../actions";
 
 export class ArrivalListItem extends React.Component {
   constructor(props) {
@@ -28,7 +28,17 @@ export class ArrivalListItem extends React.Component {
     if (!this.props.arrival.vehicle_id) {
       return;
     }
-    this.props.onVehicleClick(LocationTypes.VEHICLE, this.props.arrival);
+    for (let i = 0; i < this.props.vehicles.length; i++) {
+      if (
+        +this.props.arrival.vehicle_id === +this.props.vehicles[i].vehicle.id
+      ) {
+        this.props.onVehicleClick(
+          LocationTypes.VEHICLE,
+          this.props.vehicles[i]
+        );
+        return;
+      }
+    }
   }
 
   render() {
@@ -90,27 +100,19 @@ ArrivalListItem.propTypes = {
 
 function mapDispatchToProps(dispatch) {
   return {
-    onVehicleClick: (type, arrival) => {
+    onVehicleClick: (type, vehicle) => {
       dispatch(
         updateLocation(
           type,
-          arrival.vehicle_id,
-          arrival.vehicle_position.lat,
-          arrival.vehicle_position.lng,
+          vehicle.vehicle.id,
+          vehicle.position.lat,
+          vehicle.position.lng,
           true
         )
       );
     },
-    clearLocation: location => {
-      dispatch(
-        updateLocation(
-          LocationTypes.HOME,
-          null,
-          location.lat,
-          location.lng,
-          false
-        )
-      );
+    clearLocation: () => {
+      dispatch(clearLocation());
     }
   };
 }

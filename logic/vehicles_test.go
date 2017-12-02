@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -56,14 +57,16 @@ func TestFetchByIds(t *testing.T) {
 	for _, v := range vehicles {
 		if *v.Vehicle.ID == "201" {
 			sv[0] = v
+			v.Timestamp = now
 		} else if *v.Vehicle.ID == "202" {
 			sv[1] = v
+			v.Timestamp = now
 		}
-		v.Timestamp = now
+
 		require.NoError(t, vds.UpsertVehiclePosition(&v))
 	}
-
-	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{201, 202})
+	log.Println("NOW", now)
+	newVehicles, err := vds.FetchVehiclePositions(int(now) - 1)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(newVehicles))
 
@@ -114,9 +117,9 @@ func TestProduceVehicles(t *testing.T) {
 		vp := trimet.VehiclePosition{}
 		_, err := vp.UnmarshalMsg(b)
 		require.NoError(t, err)
-		vp.Timestamp = now
 		if *vp.Vehicle.ID == "3505" {
 			expected = vp
+			vp.Timestamp = now
 		}
 		ob, err := vp.MarshalMsg([]byte{})
 		require.NoError(t, err)
@@ -124,7 +127,7 @@ func TestProduceVehicles(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	newVehicles, err := vds.FetchVehiclePositionsByIDs([]int{3505})
+	newVehicles, err := vds.FetchVehiclePositions(int(now) - 100)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(newVehicles))
 

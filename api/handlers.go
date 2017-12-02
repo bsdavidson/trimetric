@@ -119,13 +119,17 @@ func HandleTrimetArrivals(apiKey string) http.HandlerFunc {
 func HandleVehiclePositions(vd logic.VehicleDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
-		ids, err := commaSplitInts(r.URL.Query().Get("ids"))
-		if err != nil {
-			http.Error(w, fmt.Sprintf("error parsing ids: %v", err), http.StatusBadRequest)
-			return
+		sinceStr := r.URL.Query().Get("since")
+		var since int
+		if sinceStr != "" {
+			since, err = strconv.Atoi(sinceStr)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("error parsing since: %v", err), http.StatusBadRequest)
+				return
+			}
 		}
 
-		vehicles, err := vd.FetchVehiclePositionsByIDs(ids)
+		vehicles, err := vd.FetchVehiclePositions(since)
 		if err != nil {
 			httpError(w, "HandleVehiclePositions:", err, http.StatusInternalServerError)
 			return
@@ -192,6 +196,9 @@ func HandleArrivals(sds logic.StopDataset) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		if ids[0] == "792" {
+			ar = []logic.Arrival{}
 		}
 		b, err := json.Marshal(ar)
 		if err != nil {
@@ -301,7 +308,24 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 		}()
 
 		wg := &sync.WaitGroup{}
-		wg.Add(3)
+		wg.Add(4)
+		var since uint64
+		var vehicles []logic.VehiclePositionWithRouteType
+		go func() {
+			defer wg.Done()
+			var err error
+			vehicles, err = vds.FetchVehiclePositions(0)
+			if err != nil {
+				log.Println(err)
+				cancel()
+			}
+			for _, v := range vehicles {
+				if v.Timestamp > since {
+					since = v.Timestamp
+				}
+			}
+		}()
+
 		var stops []logic.StopWithDistance
 		go func() {
 			defer wg.Done()
@@ -311,6 +335,7 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
+			log.Println("Stops Fetched from DB")
 		}()
 
 		var shapes []*logic.RouteShape
@@ -322,6 +347,7 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
+			log.Println("Route Shapes Fetched from DB")
 		}()
 
 		var routes []trimet.Route
@@ -333,34 +359,66 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
+			log.Println("Routes Fetched from DB")
 		}()
 
 		wg.Wait()
-		if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
-			log.Println(err)
-			return
-		}
-		if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
-			log.Println(err)
-			return
-		}
-		if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
-			log.Println(err)
-			return
-		}
 
-		ticker := time.NewTicker(time.Second)
+		log.Println("RouteShapes Sent to client")
+		ticker := time.NewTicker(750 * time.Millisecond)
+		timer := time.NewTimer(1250 * time.Millisecond)
+		defer timer.Stop()
 		defer ticker.Stop()
 	LOOP:
 		for {
 			select {
 			case <-ctx.Done():
 				break LOOP
+			case <-timer.C:
+
+				var stopsPacket [100]logic.StopWithDistance
+				for i, s := range stops {
+					if i%100 == 0 || i == len(stops)-1 {
+						if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
+							log.Println(err)
+							return
+						}
+						time.Sleep(25 * time.Millisecond)
+					} else {
+						stopsPacket[i%100] = s
+					}
+				}
+				if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
+					log.Println(err)
+					return
+				}
+				time.Sleep(25 * time.Millisecond)
+				log.Println("Routes Sent to client")
+				if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
+					log.Println(err)
+					return
+				}
+
+				if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
+					log.Println(err)
+					continue
+				}
+
 			case <-ticker.C:
 			}
-			vehicles, err := vds.FetchVehiclePositionsByIDs(nil)
+
+			vehicles, err := vds.FetchVehiclePositions(int(since))
 			if err != nil {
 				log.Println(err)
+				continue
+			}
+			for _, v := range vehicles {
+				if v.Timestamp > since {
+					since = v.Timestamp
+				}
+			}
+
+			if len(vehicles) == 0 {
 				continue
 			}
 			if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {

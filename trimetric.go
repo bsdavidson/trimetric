@@ -175,7 +175,7 @@ func Run(ctx context.Context, cancel context.CancelFunc, debug bool, addr, apiKe
 	mux.HandleFunc("/api/v1/shapes", api.HandleShapes(shds))
 	mux.HandleFunc("/api/v1/stops", api.HandleStops(sds))
 	mux.HandleFunc("/api/v1/trip", api.HandleTripUpdates(tuds))
-	mux.HandleFunc("/api/ws", api.HandleWSVehicles(vds, shds, sds, rds))
+	mux.HandleFunc("/ws", api.HandleWSVehicles(vds, shds, sds, rds))
 	mux.Handle("/", http.FileServer(http.Dir(webPath)))
 	srv := &http.Server{Addr: addr, Handler: mux}
 	log.Printf("serving requests on %s", addr)

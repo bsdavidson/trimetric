@@ -9,7 +9,6 @@ import (
 
 	"github.com/bsdavidson/trimetric/trimet"
 	postgis "github.com/cridenour/go-postgis"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -101,7 +100,7 @@ type VehiclePositionWithRouteType struct {
 
 // VehicleDataset provides methods to update and retrieve vehicle data
 type VehicleDataset interface {
-	FetchVehiclePositionsByIDs(ids []int) ([]VehiclePositionWithRouteType, error)
+	FetchVehiclePositions(since int) ([]VehiclePositionWithRouteType, error)
 	UpsertVehiclePosition(v *trimet.VehiclePosition) error
 	UpsertVehiclePositionBytes(ctx context.Context, b []byte) error
 }
@@ -111,10 +110,11 @@ type VehicleSQLDataset struct {
 	DB *sql.DB
 }
 
-// FetchVehiclePositionsByIDs makes a query against the DB and retrieves a list of vehicle data.
+// FetchVehiclePositions makes a query against the DB and retrieves a list of vehicle data.
 // If IDs are passed in, then vehicle data is restricted to those specific
 // vehicle IDs. Otherwise, all vehicles with a non-expired timestamp are returned.
-func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]VehiclePositionWithRouteType, error) {
+func (vd *VehicleSQLDataset) FetchVehiclePositions(since int) ([]VehiclePositionWithRouteType, error) {
+
 	q := `
 		SELECT
 			v.vehicle_id, v.vehicle_label, v.trip_id, v.route_id, v.position_bearing,
@@ -122,17 +122,13 @@ func (vd *VehicleSQLDataset) FetchVehiclePositionsByIDs(ids []int) ([]VehiclePos
 			v.timestamp, COALESCE(r.type, 3) as route_type
 		FROM vehicle_positions v
 		LEFT OUTER JOIN routes r ON v.route_id = r.id
-		WHERE v.timestamp > extract(epoch from now() - interval '5 minute')::bigint
+		WHERE v.timestamp > $1::bigint
+		AND v.timestamp > extract(epoch from now() - interval '5 minute')::bigint
 	`
-	var args []interface{}
-
-	if len(ids) > 0 {
-		q += ` AND vehicle_id = ANY($1)`
-		args = append(args, pq.Array(ids))
-	}
+	//
 
 	q += ` ORDER BY vehicle_id`
-	rows, err := vd.DB.Query(q, args...)
+	rows, err := vd.DB.Query(q, since)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

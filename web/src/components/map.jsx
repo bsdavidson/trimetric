@@ -88,16 +88,34 @@ class MapBox extends Component {
 
   componentWillReceiveProps(nextProps) {
     if (
-      this.props.locationClicked === nextProps.locationClicked ||
-      !nextProps.locationClicked
+      (this.props.locationClicked === nextProps.locationClicked ||
+        !nextProps.locationClicked) &&
+      this.props.location === nextProps.location
     ) {
       return;
     }
+
+    let newPos = null;
+    if (this.props.location !== nextProps.location) {
+      newPos = {
+        lat: nextProps.location.lat,
+        lng: nextProps.location.lng,
+        locationType: nextProps.location.locationType
+      };
+    }
+
+    if (newPos === null) {
+      newPos = {
+        lat: nextProps.locationClicked.lat,
+        lng: nextProps.locationClicked.lng,
+        locationType: nextProps.locationClicked.locationType
+      };
+    }
+
     this.handleViewportChange({
-      latitude: nextProps.locationClicked.lat,
-      longitude: nextProps.locationClicked.lng,
-      zoom:
-        nextProps.locationClicked.locationType === LocationTypes.HOME ? 17 : 19,
+      latitude: newPos.lat,
+      longitude: newPos.lng,
+      zoom: newPos.locationType === LocationTypes.HOME ? 17 : 18,
       transitionInterpolator: experimental.viewportFlyToInterpolator,
       transitionDuration: 1200
     });
@@ -132,6 +150,76 @@ class MapBox extends Component {
 
     let layers = [];
 
+    if (this.props.location) {
+      let offset = 0.0001;
+      let location = {
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [this.props.location.lng - offset, this.props.location.lat],
+            [this.props.location.lng, this.props.location.lat + offset],
+            [this.props.location.lng + offset, this.props.location.lat],
+            [this.props.location.lng, this.props.location.lat - offset],
+            [this.props.location.lng - offset, this.props.location.lat]
+          ]
+        },
+
+        properties: {
+          lineColor: [241, 196, 15, 255],
+          fillColor: [241, 196, 15, 255],
+          radius: 1
+        }
+      };
+
+      layers.push(
+        new GeoJsonLayer({
+          id: "location-home-point-layer",
+          data: [location],
+          opacity: 0.7,
+          stroked: true,
+          extruded: true,
+          filled: true,
+          lineWidthMinPixels: 4,
+          visible: 1,
+          fp64: true
+        })
+      );
+    }
+
+    if (this.props.locationClicked) {
+      let location = {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [
+            this.props.locationClicked.lng,
+
+            this.props.locationClicked.lat
+          ]
+        },
+        properties: {
+          lineColor: [0, 0, 0, 255],
+          fillColor: [0, 255, 0, 255],
+          radius: 1
+        }
+      };
+
+      layers.push(
+        new GeoJsonLayer({
+          id: "location-clicked-point-layer",
+          data: [location],
+          opacity: 0.4,
+          stroked: true,
+          filled: true,
+          lineWidthMinPixels: 2,
+          pointRadiusScale: 30,
+          visible: 1,
+          fp64: true
+        })
+      );
+    }
+
     if (this.props.stopsPointData) {
       layers.push(
         new GeoJsonLayer({
@@ -140,7 +228,8 @@ class MapBox extends Component {
           opacity: 1 - clamp(tween),
           stroked: true,
           filled: true,
-          pointRadiusScale: 40, //696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
+          pointRadiusScale:
+            696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
           visible: tween < 1,
           fp64: true
         })
@@ -157,7 +246,8 @@ class MapBox extends Component {
           visible: tween > 0,
           opacity: 1,
           fp64: true,
-          sizeScale: 40 // -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
+          sizeScale:
+            -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
         })
       );
     }
@@ -184,7 +274,8 @@ class MapBox extends Component {
           opacity: 1 - clamp(tween),
           stroked: true,
           filled: true,
-          pointRadiusScale: 40, //696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
+          pointRadiusScale:
+            696.0864 - 106.8473 * zoom + 4.205566 * Math.pow(zoom, 2),
           visible: tween < 1,
           fp64: true
         })
@@ -201,7 +292,8 @@ class MapBox extends Component {
           visible: tween > 0,
           opacity: 1,
           fp64: true,
-          sizeScale: 40 // -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
+          sizeScale:
+            -40.28287 + 0.1462691 * zoom + 0.3593278 * Math.pow(zoom, 2)
         })
       );
     }

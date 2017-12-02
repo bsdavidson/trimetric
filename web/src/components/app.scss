@@ -28,6 +28,55 @@
   }
 }
 
+.use-current {
+  color: $foreground-dark;
+  cursor: pointer;
+  font-size: 1.5em;
+  padding: 0.5em;
+  position: absolute;
+  right: 0.3em;
+  top: 0.1em;
+
+  &:hover {
+    color: $foreground-light;
+  }
+}
+
+.spinner {
+  width: 25px;
+  height: 25px;
+  margin: 100px auto;
+  background-color: #fff;
+  position: absolute;
+  right: 0.3em;
+  top: -3.4em;
+  border-radius: 100%;
+  -webkit-animation: sk-scaleout 1s infinite ease-in-out;
+  animation: sk-scaleout 1s infinite ease-in-out;
+}
+
+@-webkit-keyframes sk-scaleout {
+  0% {
+    -webkit-transform: scale(0);
+  }
+  100% {
+    -webkit-transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes sk-scaleout {
+  0% {
+    -webkit-transform: scale(0);
+    transform: scale(0);
+  }
+  100% {
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
 .header {
   width: 100%;
   padding-bottom: 1em;

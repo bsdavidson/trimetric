@@ -28,6 +28,7 @@ func (sd *ShapeSQLDataset) FetchRouteShapes() ([]*RouteShape, error) {
 			SELECT DISTINCT trips.shape_id, routes.id as route_id, trips.direction_id as direction_id, routes.color as route_color
 			FROM routes
 			JOIN trips ON trips.route_id = routes.id
+			WHERE routes.type = 0
 		) AS route_shapes ON route_shapes.shape_id = shapes.id
 		ORDER BY id, pt_sequence ASC
 	`

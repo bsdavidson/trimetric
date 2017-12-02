@@ -43,12 +43,10 @@ export function updateLines(lineData) {
   };
 }
 
-export function updateStops(stops, stopsPointData, stopsIconData) {
+export function updateStops(stops) {
   return {
     type: UPDATE_STOPS,
-    stops,
-    stopsPointData,
-    stopsIconData
+    stops
   };
 }
 

@@ -1,6 +1,7 @@
 var webpack = require("webpack");
 const DotenvPlugin = require("webpack-dotenv-plugin");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 
 module.exports = {
   devtool: "source-map",
@@ -9,6 +10,10 @@ module.exports = {
     proxy: {
       "/api": {
         target: "http://api:80"
+      },
+      "/ws": {
+        target: "ws://api:80",
+        ws: true
       }
     }
   },
@@ -54,10 +59,7 @@ module.exports = {
   plugins: [
     new ExtractTextPlugin({filename: "bundle.css", allChunks: true}),
     new DotenvPlugin(),
-    new webpack.EnvironmentPlugin({NODE_ENV: "development"}),
-    new webpack.optimize.UglifyJsPlugin({
-      sourceMap: true
-    })
+    new webpack.EnvironmentPlugin({NODE_ENV: "development"})
   ],
   output: {
     path: __dirname,
@@ -67,3 +69,7 @@ module.exports = {
     extensions: [".js", ".jsx"]
   }
 };
+
+if (process.env.NODE_ENV !== "development") {
+  module.exports.plugins.push(new UglifyJsPlugin());
+}

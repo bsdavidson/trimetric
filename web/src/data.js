@@ -23,27 +23,19 @@ const API_ENDPOINTS = {
   stops: "/api/v1/stops",
   routes: "/api/v1/routes",
   lines: "/api/v1/routes/lines",
-  vehiclesGTFS: "/api/v1/vehicles",
-  ws: "ws://localhost:8181/api/ws"
+  vehiclesGTFS: "/api/v1/vehicles"
 };
 
-const VEHICLE_TYPES = {
-  0: "tram",
-  1: "subway",
-  2: "rail",
-  3: "bus"
+const messageTypeToAction = {
+  arrivals: updateArrivals,
+  routes: updateRoutes,
+  route_shapes: updateLines,
+  stops: updateStops,
+  vehicles: updateVehicles
 };
 
-export function getVehicleType(routeType) {
-  return VEHICLE_TYPES[routeType] || "bus";
-}
-
-function parseColor(hex) {
-  if (!hex) {
-    return [0, 0, 0, 192];
-  }
-  let color = parseInt(hex, 16);
-  return [(color >> 16) & 255, (color >> 8) & 255, color & 255, 255];
+function sleep(time) {
+  return new Promise(resolve => setTimeout(resolve, time));
 }
 
 export class Trimet {
@@ -59,7 +51,16 @@ export class Trimet {
   }
 
   connect() {
-    this.connection = new WebSocket(API_ENDPOINTS.ws);
+    const loc = window.location;
+    let origin = loc.origin;
+    if (!origin) {
+      origin = `${loc.protocol}//${loc.hostname}${
+        loc.port ? ":" + loc.port : ""
+      }`;
+    }
+
+    const url = `${origin}/ws`.replace(/^http(s?)/, "ws$1");
+    this.connection = new WebSocket(url);
 
     this.connection.onopen = () => {
       console.log("WebSocket Connected");
@@ -84,25 +85,11 @@ export class Trimet {
   }
 
   handleMessage(message) {
-    switch (message.type) {
-      case "arrivals":
-        this.processArrivals(message.data);
-        break;
-      case "routes":
-        this.processRoutes(message.data);
-        break;
-      case "route_shapes":
-        this.processRouteShapes(message.data);
-        break;
-      case "stops":
-        this.processStops(message.data);
-        break;
-      case "vehicles":
-        this.processVehicles(message.data);
-        break;
-      default:
-        break;
+    let action = messageTypeToAction[message.type];
+    if (!action) {
+      return;
     }
+    this.store.dispatch(action(message.data));
   }
 
   handleStopChange(stop) {
@@ -155,7 +142,8 @@ export class Trimet {
     return Promise.all([
       this.fetch(shapesAPIURL).then(response => response.json())
     ]).then(([shapes]) => {
-      this.processRouteShapes(shapes);
+      this.store.dispatch(updateLines(shapes));
+
       return shapes;
     });
   }
@@ -167,7 +155,8 @@ export class Trimet {
         return data.stops;
       })
       .then(stops => {
-        this.processStops(stops);
+        this.store.dispatch(updateStops(stops));
+        return stops;
       });
   }
 
@@ -185,108 +174,11 @@ export class Trimet {
   }
 
   processArrivals(arrivals) {
-    if (arrivals.length === 0) {
-      return;
-    }
     this.store.dispatch(updateArrivals(arrivals));
   }
 
-  processRoutes(routes) {
-    this.store.dispatch(updateRoutes(routes));
-  }
-
-  processRouteShapes(shapes) {
-    let routeLineIndexes = {};
-    let routeLines = [];
-    shapes.forEach(s => {
-      let idx = routeLineIndexes[s.color];
-      if (idx === undefined) {
-        idx = routeLines.length;
-        routeLineIndexes[s.color] = idx;
-        routeLines.push({
-          type: "MultiLineString",
-          color: parseColor(s.color),
-          coordinates: [],
-          routeID: s.route_id,
-          width: s.color ? 4 : 2
-        });
-      }
-      routeLines[idx].coordinates.push(
-        s.points.map(p => {
-          return [p.lng, p.lat];
-        })
-      );
-    });
-    this.store.dispatch(updateLines(routeLines));
-  }
-
-  processStops(stops) {
-    let stopsPointData = stops.map(s => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [s.lng, s.lat]
-      },
-      properties: {
-        lineColor: [255, 0, 0, 255],
-        fillColor: [0, 0, 0, 255],
-        radius: 1
-      }
-    }));
-
-    let stopsIconData = stops.map(s => ({
-      position: [s.lng, s.lat, 0],
-      icon: "stop",
-      size: 1
-    }));
-
-    this.store.dispatch(updateStops(stops, stopsPointData, stopsIconData));
-    return stops;
-  }
-
   processVehicles(vehicles) {
-    let vehiclesPointData = vehicles.map(v => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [v.position.lng, v.position.lat]
-      },
-      properties: {
-        lineColor: [246, 76, 0, 255],
-        fillColor: [246, 76, 0, 255],
-        radius: 2.5
-      }
-    }));
-
-    let vehiclesIconData = vehicles.map(v => ({
-      position: [v.position.lng, v.position.lat, 10],
-      icon: getVehicleType(v.route_type),
-      size: 1.4
-    }));
-
-    this.store.dispatch(
-      updateVehicles(vehicles, vehiclesPointData, vehiclesIconData)
-    );
-    let lc = this.store.getState().locationClicked;
-    if (lc) {
-      vehicles.forEach(v => {
-        if (lc.id !== v.vehicle.id) {
-          return;
-        }
-        if (lc.lat === v.position.lat && lc.lng === v.position.lng) {
-          return;
-        }
-        this.store.dispatch(
-          updateLocation(
-            lc.locationType,
-            lc.id,
-            v.position.lat,
-            v.position.lng,
-            lc.following
-          )
-        );
-      });
-    }
+    this.store.dispatch(updateVehicles(vehicles));
   }
 
   start() {

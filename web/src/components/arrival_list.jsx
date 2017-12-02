@@ -1,13 +1,13 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {hashHistory, withRouter, Link} from "react-router-dom";
+import {withRouter, Link} from "react-router-dom";
 import {connect} from "react-redux";
 import moment from "moment";
 
 import {TrimetricPropTypes} from "./prop_types";
 import ArrivalListItem from "./arrival_list_item";
 import Header from "./header";
-import {updateLocation, LocationTypes} from "../actions";
+import {clearLocation, updateLocation, LocationTypes} from "../actions";
 import {buildQuery} from "../helpers/http";
 import {formatEstimate} from "../helpers/times";
 import {ColorMap} from "../helpers/colors";
@@ -19,10 +19,6 @@ export class ArrivalList extends React.Component {
     super(props);
     this.handleDirectionsClick = this.handleDirectionsClick.bind(this);
     this.handleRouteNameClick = this.handleRouteNameClick.bind(this);
-  }
-
-  handleBack() {
-    hashHistory.goBack();
   }
 
   handleDirectionsClick() {
@@ -42,7 +38,7 @@ export class ArrivalList extends React.Component {
 
   render() {
     let {arrivals, stop} = this.props;
-    if (!arrivals) {
+    if (arrivals === null) {
       return null;
     }
     let items = arrivals.map((a, idx) => {
@@ -105,6 +101,9 @@ function mapDispatchToProps(dispatch) {
       dispatch(
         updateLocation(LocationTypes.STOP, stop.id, stop.lat, stop.lng, false)
       );
+    },
+    onClearLocation: () => {
+      dispatch(clearLocation());
     }
   };
 }
