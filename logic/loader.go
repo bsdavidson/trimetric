@@ -168,13 +168,14 @@ func (ld *LoaderSQLDataset) LoadGTFSData(baseURL string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
 	_, err = tx.Exec(fmt.Sprintf("TRUNCATE %s RESTART IDENTITY", strings.Join(staticTables, ", ")))
 	if err != nil {
+		log.Println("Error in DB", err)
 		return rollbackError(tx.Rollback(), err)
 	}
 
 	for _, l := range loaders {
+		log.Println("Loading ", l.filename)
 		data, err := trimet.ReadZippedGTFSCSV(gtfsFile, l.filename)
 		if err != nil {
 			return rollbackError(tx.Rollback(), err)

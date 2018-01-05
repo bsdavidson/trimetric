@@ -124,10 +124,9 @@ func (vd *VehicleSQLDataset) FetchVehiclePositions(since int) ([]VehiclePosition
 		LEFT OUTER JOIN routes r ON v.route_id = r.id
 		WHERE v.timestamp > $1::bigint
 		AND v.timestamp > extract(epoch from now() - interval '5 minute')::bigint
+		ORDER BY vehicle_id
 	`
-	//
 
-	q += ` ORDER BY vehicle_id`
 	rows, err := vd.DB.Query(q, since)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -213,10 +212,10 @@ func (vd *VehicleSQLDataset) UpsertVehiclePositionBytes(ctx context.Context, b [
 // ProduceVehiclePositions makes requests to the Trimet API and passes the result
 // to a Producer
 func ProduceVehiclePositions(ctx context.Context, p Producer, baseURL, apiKey string, delay time.Duration) error {
-	var lastQueryTimeMs int64
 	vehicleMap := map[string]uint64{}
 	ticker := time.NewTicker(delay)
 	defer ticker.Stop()
+	var highestTimestamp uint64
 REQUEST_LOOP:
 	for {
 		select {
@@ -226,7 +225,7 @@ REQUEST_LOOP:
 		}
 
 		queryTime := time.Now()
-		vehicles, err := trimet.RequestVehiclePositions(baseURL, apiKey, lastQueryTimeMs)
+		vehicles, err := trimet.RequestVehiclePositions(baseURL, apiKey, highestTimestamp)
 		vehicleProducerRequestDurationSeconds.Observe(time.Since(queryTime).Seconds())
 		if err != nil {
 			vehicleProducerRequestErrorsTotal.Add(1)
@@ -237,11 +236,15 @@ REQUEST_LOOP:
 
 		t := time.Now()
 		for _, tv := range vehicles {
+
 			if val, ok := vehicleMap[*tv.Vehicle.ID]; ok {
 				if tv.Timestamp == val {
 					vehicleProducerDuplicatesTotal.Add(1)
 					continue
 				}
+			}
+			if tv.Timestamp > highestTimestamp {
+				highestTimestamp = tv.Timestamp - 5
 			}
 
 			vehicleMap[*tv.Vehicle.ID] = tv.Timestamp
@@ -265,6 +268,5 @@ REQUEST_LOOP:
 		}
 
 		vehicleProducerProcessDurationSeconds.Observe(time.Since(t).Seconds())
-		lastQueryTimeMs = queryTime.Unix() * 1000
 	}
 }

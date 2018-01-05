@@ -1,5 +1,4 @@
 import {createStore, combineReducers} from "redux";
-import {douglasPeucker} from "./helpers/geom.js";
 import {
   LocationTypes,
   UPDATE_ARRIVALS,
@@ -62,16 +61,7 @@ function mergeUpdates(state, updates, isEqualFunc) {
     newCount++;
     newState.push(u);
   });
-  // console.log(
-  //   "NewCount",
-  //   newCount,
-  //   "Update",
-  //   updateCount,
-  //   "expired",
-  //   expired,
-  //   "Total",
-  //   newState.length
-  // );
+
   return newState;
 }
 

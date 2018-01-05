@@ -62,11 +62,11 @@ type Position struct {
 // RequestVehiclePositions contacts the Trimet Vehicles GTFS API and retrieves all vehicles
 // updated after the 'since' value. If no 'since' value is specified, it defaults
 // to retrieving them all since midnight of the service day.
-func RequestVehiclePositions(baseURL string, appID string, since int64) ([]VehiclePosition, error) {
+func RequestVehiclePositions(baseURL string, appID string, since uint64) ([]VehiclePosition, error) {
 	query := url.Values{}
 	query.Set("appID", appID)
 	if since > 0 {
-		query.Set("since", strconv.FormatInt(since, 10))
+		query.Set("since", strconv.FormatUint(since, 10))
 	}
 	resp, err := http.Get(fmt.Sprintf("%s?%s", baseURL+VehiclesGTFS, query.Encode()))
 	if err != nil {

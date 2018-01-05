@@ -13,6 +13,7 @@ import (
 type ShapeDataset interface {
 	FetchRouteShapes() ([]*RouteShape, error)
 	FetchShapes(routeIDS, shapeIDs []string) ([]Shape, error)
+	FetchTripShapes(tripIDs []string) (map[string]*TripShape, error)
 }
 
 // ShapeSQLDataset stores a DB instance and provides access to methods to
@@ -21,7 +22,7 @@ type ShapeSQLDataset struct {
 	DB *sql.DB
 }
 
-// Shape ...
+// Shape represents the shape line for a given route.
 type Shape struct {
 	ID          string  `json:"id"`
 	DirectionID int     `json:"direction_id"`
@@ -29,14 +30,14 @@ type Shape struct {
 	Point       []Point `json:"point"`
 }
 
-// Point ...
+// Point represents a single point along a route shape
 type Point struct {
 	Lat          float64 `json:"lat"`
 	Lng          float64 `json:"lng"`
 	DistTraveled float64 `json:"dist_traveled"`
 }
 
-// FetchShapes ...
+// FetchShapes takes a slice of routes  or shapeID's and returns an array of shapes.
 func (sd *ShapeSQLDataset) FetchShapes(routeIDs, shapeIDs []string) ([]Shape, error) {
 	// TODO: Query BAsed on trip_IDS
 	q := `

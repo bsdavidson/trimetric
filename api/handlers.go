@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bsdavidson/trimetric/logic"
@@ -184,8 +185,14 @@ func parseArgs(argStr, sep string) []string {
 	return argsArr
 }
 
+// ArrivalWithTrip ...
+type ArrivalWithTrip struct {
+	logic.Arrival
+	TripShape *logic.TripShape `json:"trip_shape"`
+}
+
 // HandleArrivals returns a list of upcoming arrivals for a list of stops.
-func HandleArrivals(sds logic.StopDataset) http.HandlerFunc {
+func HandleArrivals(sds logic.StopDataset, shds logic.ShapeDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ids := parseArgs(r.URL.Query().Get("stop_ids"), ",")
 		if ids == nil {
@@ -197,10 +204,28 @@ func HandleArrivals(sds logic.StopDataset) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if ids[0] == "792" {
-			ar = []logic.Arrival{}
+
+		awts := []ArrivalWithTrip{}
+
+		trips := []string{}
+		for _, a := range ar {
+			trips = append(trips, a.TripID)
 		}
-		b, err := json.Marshal(ar)
+		shapes, err := shds.FetchTripShapes(trips)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, a := range ar {
+			awt := ArrivalWithTrip{
+				Arrival:   a,
+				TripShape: shapes[a.TripID],
+			}
+			awts = append(awts, awt)
+		}
+
+		b, err := json.Marshal(awts)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -283,9 +308,55 @@ type wsMessage struct {
 	Data interface{} `json:"data"`
 }
 
-// HandleWSVehicles ...
-func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) http.HandlerFunc {
+var count int64
+
+func init() {
+	var lastCount int64
+	go func() {
+		for {
+			if count != lastCount {
+				atomic.StoreInt64(&lastCount, count)
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}()
+}
+
+// HandleWS maintains a websocket connection and pushes content to
+// connected web clients.
+func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Client Connecting")
+		chunkify := true
+		sendStaticData := true
+		var version int64
+		var err error
+
+		verStr := r.URL.Query().Get("version")
+		if verStr != "" {
+			version, err = strconv.ParseInt(verStr, 10, 8)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		cStr := r.URL.Query().Get("chunkify")
+		if cStr != "" {
+			chunkify, err = strconv.ParseBool(cStr)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		sStr := r.URL.Query().Get("static")
+		if sStr != "" {
+			sendStaticData, err = strconv.ParseBool(sStr)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+
 		var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -293,7 +364,10 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 			return
 		}
 		defer c.Close()
+		log.Printf("Client v%d Connected", version)
 
+		atomic.AddInt64(&count, 1)
+		defer atomic.AddInt64(&count, -1)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		go func() {
@@ -335,7 +409,6 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
-			log.Println("Stops Fetched from DB")
 		}()
 
 		var shapes []*logic.RouteShape
@@ -347,7 +420,6 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
-			log.Println("Route Shapes Fetched from DB")
 		}()
 
 		var routes []trimet.Route
@@ -359,13 +431,10 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 				log.Println(err)
 				cancel()
 			}
-			log.Println("Routes Fetched from DB")
 		}()
 
 		wg.Wait()
-
-		log.Println("RouteShapes Sent to client")
-		ticker := time.NewTicker(750 * time.Millisecond)
+		ticker := time.NewTicker(5000 * time.Millisecond)
 		timer := time.NewTimer(1250 * time.Millisecond)
 		defer timer.Stop()
 		defer ticker.Stop()
@@ -375,28 +444,51 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 			case <-ctx.Done():
 				break LOOP
 			case <-timer.C:
+				err := c.WriteJSON(wsMessage{
+					Type: "totals",
+					Data: map[string]int{
+						"stops":        len(stops),
+						"routes":       len(routes),
+						"route_shapes": len(shapes),
+						"vehicles":     len(vehicles),
+					},
+				})
+				if err != nil {
+					log.Println(err)
+					return
+				}
 
-				var stopsPacket [100]logic.StopWithDistance
-				for i, s := range stops {
-					if i%100 == 0 || i == len(stops)-1 {
-						if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
+				if sendStaticData {
+					if chunkify {
+						var stopsPacket [100]logic.StopWithDistance
+						for i, s := range stops {
+							if i%100 == 0 || i == len(stops)-1 {
+								if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
+									log.Println(err)
+									return
+								}
+								time.Sleep(25 * time.Millisecond)
+							} else {
+								stopsPacket[i%100] = s
+							}
+						}
+					} else {
+						if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
 							log.Println(err)
 							return
 						}
-						time.Sleep(25 * time.Millisecond)
-					} else {
-						stopsPacket[i%100] = s
 					}
-				}
-				if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
-					log.Println(err)
-					return
-				}
-				time.Sleep(25 * time.Millisecond)
-				log.Println("Routes Sent to client")
-				if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
-					log.Println(err)
-					return
+
+					if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
+						log.Println(err)
+						return
+					}
+					time.Sleep(25 * time.Millisecond)
+
+					if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
+						log.Println(err)
+						return
+					}
 				}
 
 				if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
@@ -406,8 +498,8 @@ func HandleWSVehicles(vds logic.VehicleDataset, shds logic.ShapeDataset, sds log
 
 			case <-ticker.C:
 			}
-
-			vehicles, err := vds.FetchVehiclePositions(int(since))
+			// 0 sends all positions on each push.
+			vehicles, err := vds.FetchVehiclePositions(0) //int(since)
 			if err != nil {
 				log.Println(err)
 				continue
