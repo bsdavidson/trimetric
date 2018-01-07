@@ -16,7 +16,7 @@ import {buildQuery} from "./helpers/http";
 
 const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
 
-const UPDATE_TIMEOUT = 1000;
+const UPDATE_TIMEOUT = 4000;
 const API_ENDPOINTS = {
   arrivals: "/api/v1/arrivals",
   shapes: "/api/v1/shapes",
@@ -33,10 +33,6 @@ const messageTypeToAction = {
   stops: updateStops,
   vehicles: updateVehicles
 };
-
-function sleep(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-}
 
 export class Trimet {
   constructor(store, _fetch = fetch) {

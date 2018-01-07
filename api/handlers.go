@@ -322,6 +322,88 @@ func init() {
 	}()
 }
 
+func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) error {
+	var errored int64
+	wg := &sync.WaitGroup{}
+	wg.Add(3)
+
+	var stops []logic.StopWithDistance
+	go func() {
+		defer wg.Done()
+		var err error
+		stops, err = sds.FetchAllStops()
+		if err != nil {
+			atomic.AddInt64(&errored, 1)
+			log.Println(err)
+		}
+	}()
+
+	var shapes []*logic.RouteShape
+	go func() {
+		defer wg.Done()
+		var err error
+		shapes, err = shds.FetchRouteShapes()
+		if err != nil {
+			atomic.AddInt64(&errored, 1)
+			log.Println(err)
+		}
+	}()
+
+	var routes []trimet.Route
+	go func() {
+		defer wg.Done()
+		var err error
+		routes, err = rds.FetchRoutes()
+		if err != nil {
+			atomic.AddInt64(&errored, 1)
+			log.Println(err)
+		}
+	}()
+
+	wg.Wait()
+	if errored > 0 {
+		return fmt.Errorf("error fetching static data")
+	}
+	err := c.WriteJSON(wsMessage{
+		Type: "totals",
+		Data: map[string]int{
+			"stops":        len(stops),
+			"routes":       len(routes),
+			"route_shapes": len(shapes),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if chunkify {
+		var stopsPacket [100]logic.StopWithDistance
+		for i, s := range stops {
+			if i%100 == 0 || i == len(stops)-1 {
+				if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
+					return err
+				}
+				time.Sleep(25 * time.Millisecond)
+			} else {
+				stopsPacket[i%100] = s
+			}
+		}
+	} else {
+		if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
+			return err
+		}
+	}
+
+	if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
+		return err
+	}
+	time.Sleep(25 * time.Millisecond)
+
+	if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // HandleWS maintains a websocket connection and pushes content to
 // connected web clients.
 func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) http.HandlerFunc {
@@ -381,12 +463,11 @@ func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopD
 			}
 		}()
 
-		wg := &sync.WaitGroup{}
-		wg.Add(4)
 		var since uint64
 		var vehicles []logic.VehiclePositionWithRouteType
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
 		go func() {
-			defer wg.Done()
 			var err error
 			vehicles, err = vds.FetchVehiclePositions(0)
 			if err != nil {
@@ -398,107 +479,35 @@ func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopD
 					since = v.Timestamp
 				}
 			}
+			wg.Done()
 		}()
 
-		var stops []logic.StopWithDistance
-		go func() {
-			defer wg.Done()
-			var err error
-			stops, err = sds.FetchAllStops()
-			if err != nil {
-				log.Println(err)
-				cancel()
+		if sendStaticData {
+			// Will block until static data is sent or it errors
+			if err = sendStaticDataToWS(c, chunkify, shds, sds, rds); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
-		}()
-
-		var shapes []*logic.RouteShape
-		go func() {
-			defer wg.Done()
-			var err error
-			shapes, err = shds.FetchRouteShapes()
-			if err != nil {
-				log.Println(err)
-				cancel()
-			}
-		}()
-
-		var routes []trimet.Route
-		go func() {
-			defer wg.Done()
-			var err error
-			routes, err = rds.FetchRoutes()
-			if err != nil {
-				log.Println(err)
-				cancel()
-			}
-		}()
-
+		}
+		// Send initial vehicles
 		wg.Wait()
+		if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		ticker := time.NewTicker(5000 * time.Millisecond)
-		timer := time.NewTimer(1250 * time.Millisecond)
-		defer timer.Stop()
 		defer ticker.Stop()
 	LOOP:
 		for {
 			select {
 			case <-ctx.Done():
 				break LOOP
-			case <-timer.C:
-				err := c.WriteJSON(wsMessage{
-					Type: "totals",
-					Data: map[string]int{
-						"stops":        len(stops),
-						"routes":       len(routes),
-						"route_shapes": len(shapes),
-						"vehicles":     len(vehicles),
-					},
-				})
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				if sendStaticData {
-					if chunkify {
-						var stopsPacket [100]logic.StopWithDistance
-						for i, s := range stops {
-							if i%100 == 0 || i == len(stops)-1 {
-								if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
-									log.Println(err)
-									return
-								}
-								time.Sleep(25 * time.Millisecond)
-							} else {
-								stopsPacket[i%100] = s
-							}
-						}
-					} else {
-						if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
-							log.Println(err)
-							return
-						}
-					}
-
-					if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
-						log.Println(err)
-						return
-					}
-					time.Sleep(25 * time.Millisecond)
-
-					if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
-						log.Println(err)
-						return
-					}
-				}
-
-				if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
-					log.Println(err)
-					continue
-				}
 
 			case <-ticker.C:
 			}
-			// 0 sends all positions on each push.
+			// 0 sends all positions on each push rather than just what has changed.
+			// This is a temp debug setting that should be fixed.
 			vehicles, err := vds.FetchVehiclePositions(0) //int(since)
 			if err != nil {
 				log.Println(err)
