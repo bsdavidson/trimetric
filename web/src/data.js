@@ -2,6 +2,7 @@
 
 import "whatwg-fetch";
 import fetchPonyfill from "fetch-ponyfill";
+import pako from "pako";
 
 import {
   LocationTypes,
@@ -57,6 +58,8 @@ export class Trimet {
 
     const url = `${origin}/ws`.replace(/^http(s?)/, "ws$1");
     this.connection = new WebSocket(url);
+    // Required for pako to decode the message.data directly
+    this.connection.binaryType = "arraybuffer";
 
     this.connection.onopen = () => {
       console.log("WebSocket Connected");
@@ -68,13 +71,14 @@ export class Trimet {
 
     this.connection.onmessage = message => {
       try {
-        var parsedMsg = JSON.parse(message.data);
+        var parsedMsg = JSON.parse(pako.inflate(message.data, {to: "string"}));
       } catch (err) {
         console.log("WebSocket JSON Error:", err);
         return;
       }
       this.handleMessage(parsedMsg);
     };
+
     this.connection.onerror = err => {
       console.log("WebSocket Error:", err);
     };

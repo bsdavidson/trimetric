@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "cd web && webpack",
-    "dist":
-      "npm run build && cd web && rm -rf dist && mkdir dist && cp -Rv index.html privacy_policy.html terms_and_conditions.html robots.txt assets bundle.css bundle.js dist/",
+    "dist": "npm run build && cd web && rm -rf dist && mkdir dist && cp -Rv index.html privacy_policy.html terms_and_conditions.html robots.txt assets bundle.css bundle.js dist/",
     "githooks-install": "precommit install",
     "githooks-remove": "precommit remove",
     "lint": "eslint web/src web/test --ext jsx",
@@ -89,8 +88,15 @@
   "directories": {
     "test": "test"
   },
-  "keywords": ["reactjs", "webpack", "karma", "mocha", "chai"],
+  "keywords": [
+    "reactjs",
+    "webpack",
+    "karma",
+    "mocha",
+    "chai"
+  ],
   "dependencies": {
-    "http-server": "^0.10.0"
+    "http-server": "^0.10.0",
+    "pako": "^1.0.6"
   }
 }

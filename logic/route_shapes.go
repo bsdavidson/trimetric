@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"log"
 	"sort"
 
 	postgis "github.com/cridenour/go-postgis"
@@ -34,7 +33,6 @@ type TripShape struct {
 // trip id's with all of their trip shapes. This is used client side to
 // render a route line for a specific trip a vehicle is on.
 func (sd *ShapeSQLDataset) FetchTripShapes(tripIDs []string) (map[string]*TripShape, error) {
-	log.Println("Fetchiung Shapes for tripID:", tripIDs)
 	q := `
 		SELECT
 			shapes.id,

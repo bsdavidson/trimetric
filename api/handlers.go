@@ -1,6 +1,7 @@
 package api
 
 import (
+	"compress/zlib"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -308,6 +309,45 @@ type wsMessage struct {
 	Data interface{} `json:"data"`
 }
 
+type writeFunc func(c *websocket.Conn, message interface{}) error
+
+// writeJSON writes data to the websocket conn
+func writeJSON(c *websocket.Conn, v interface{}) error {
+	c.EnableWriteCompression(true)
+	w, err := c.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return err
+	}
+	err1 := json.NewEncoder(w).Encode(v)
+	err2 := w.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
+// writeCompressedJSON compresses the data using zlib before sending it to the Conn
+func writeCompressedJSON(c *websocket.Conn, v interface{}) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	w, err := c.NextWriter(websocket.BinaryMessage)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+	zw := zlib.NewWriter(w)
+	defer zw.Close()
+	_, err = zw.Write(b)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var count int64
 
 func init() {
@@ -322,7 +362,7 @@ func init() {
 	}()
 }
 
-func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) error {
+func sendStaticDataToWS(c *websocket.Conn, chunkify bool, write writeFunc, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) error {
 	var errored int64
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -364,7 +404,7 @@ func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDatase
 	if errored > 0 {
 		return fmt.Errorf("error fetching static data")
 	}
-	err := c.WriteJSON(wsMessage{
+	err := write(c, wsMessage{
 		Type: "totals",
 		Data: map[string]int{
 			"stops":        len(stops),
@@ -379,7 +419,7 @@ func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDatase
 		var stopsPacket [100]logic.StopWithDistance
 		for i, s := range stops {
 			if i%100 == 0 || i == len(stops)-1 {
-				if err := c.WriteJSON(wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
+				if err := write(c, wsMessage{Type: "stops", Data: stopsPacket}); err != nil {
 					return err
 				}
 				time.Sleep(25 * time.Millisecond)
@@ -388,20 +428,43 @@ func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDatase
 			}
 		}
 	} else {
-		if err := c.WriteJSON(wsMessage{Type: "stops", Data: stops}); err != nil {
+		if err := write(c, wsMessage{Type: "stops", Data: stops}); err != nil {
 			return err
 		}
 	}
 
-	if err := c.WriteJSON(wsMessage{Type: "routes", Data: routes}); err != nil {
+	if err := write(c, wsMessage{Type: "routes", Data: routes}); err != nil {
 		return err
 	}
 	time.Sleep(25 * time.Millisecond)
 
-	if err := c.WriteJSON(wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
+	if err := write(c, wsMessage{Type: "route_shapes", Data: shapes}); err != nil {
 		return err
 	}
 	return nil
+}
+
+func parseBool(s string, defaultValue bool) (bool, error) {
+	if s == "" {
+		return defaultValue, nil
+	}
+	b, err := strconv.ParseBool(s)
+	if err != nil {
+		return defaultValue, err
+	}
+	return b, nil
+}
+
+func parseInt(s string, defaultValue int64) (int64, error) {
+	if s == "" {
+		return defaultValue, nil
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return defaultValue, err
+	}
+	return n, nil
+
 }
 
 // HandleWS maintains a websocket connection and pushes content to
@@ -409,34 +472,37 @@ func sendStaticDataToWS(c *websocket.Conn, chunkify bool, shds logic.ShapeDatase
 func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopDataset, rds logic.RouteDataset) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Client Connecting")
-		chunkify := true
-		sendStaticData := true
-		var version int64
 		var err error
 
-		verStr := r.URL.Query().Get("version")
-		if verStr != "" {
-			version, err = strconv.ParseInt(verStr, 10, 8)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+		version, err := parseInt(r.URL.Query().Get("version"), 0)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		cStr := r.URL.Query().Get("chunkify")
-		if cStr != "" {
-			chunkify, err = strconv.ParseBool(cStr)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+
+		chunkify, err := parseBool(r.URL.Query().Get("chunkify"), false)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		sStr := r.URL.Query().Get("static")
-		if sStr != "" {
-			sendStaticData, err = strconv.ParseBool(sStr)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+
+		sendStaticData, err := parseBool(r.URL.Query().Get("static"), true)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		compressData, err := parseBool(r.URL.Query().Get("compress"), true)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var write writeFunc
+		if compressData {
+			write = writeCompressedJSON
+		} else {
+			write = writeJSON
 		}
 
 		var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
@@ -484,14 +550,14 @@ func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopD
 
 		if sendStaticData {
 			// Will block until static data is sent or it errors
-			if err = sendStaticDataToWS(c, chunkify, shds, sds, rds); err != nil {
+			if err = sendStaticDataToWS(c, chunkify, write, shds, sds, rds); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 		// Send initial vehicles
 		wg.Wait()
-		if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
+		if err := write(c, wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -522,7 +588,7 @@ func HandleWS(vds logic.VehicleDataset, shds logic.ShapeDataset, sds logic.StopD
 			if len(vehicles) == 0 {
 				continue
 			}
-			if err := c.WriteJSON(wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
+			if err := write(c, wsMessage{Type: "vehicles", Data: vehicles}); err != nil {
 				log.Println(err)
 				continue
 			}
