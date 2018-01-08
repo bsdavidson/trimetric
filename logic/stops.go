@@ -244,5 +244,6 @@ func (sd *StopSQLDataset) FetchArrivals(stopIDs []string) ([]Arrival, error) {
 	if err := rows.Err(); err != nil {
 		return nil, errors.WithStack(err)
 	}
+
 	return arrivals, nil
 }

@@ -18,7 +18,7 @@ type RouteSQLDataset struct {
 	DB *sql.DB
 }
 
-// FetchRoutes ...
+// FetchRoutes returns a slice of all routes in the database.
 func (sd *RouteSQLDataset) FetchRoutes() ([]trimet.Route, error) {
 	q := `
 		SELECT id,agency_id,short_name,long_name,type,url,color,text_color,sort_order

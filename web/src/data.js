@@ -2,6 +2,7 @@
 
 import "whatwg-fetch";
 import fetchPonyfill from "fetch-ponyfill";
+import pako from "pako";
 
 import {
   LocationTypes,
@@ -16,7 +17,7 @@ import {buildQuery} from "./helpers/http";
 
 const {fetch} = fetchPonyfill(); // eslint-disable-line no-unused-vars
 
-const UPDATE_TIMEOUT = 1000;
+const UPDATE_TIMEOUT = 4000;
 const API_ENDPOINTS = {
   arrivals: "/api/v1/arrivals",
   shapes: "/api/v1/shapes",
@@ -33,10 +34,6 @@ const messageTypeToAction = {
   stops: updateStops,
   vehicles: updateVehicles
 };
-
-function sleep(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-}
 
 export class Trimet {
   constructor(store, _fetch = fetch) {
@@ -61,6 +58,8 @@ export class Trimet {
 
     const url = `${origin}/ws`.replace(/^http(s?)/, "ws$1");
     this.connection = new WebSocket(url);
+    // Required for pako to decode the message.data directly
+    this.connection.binaryType = "arraybuffer";
 
     this.connection.onopen = () => {
       console.log("WebSocket Connected");
@@ -72,13 +71,14 @@ export class Trimet {
 
     this.connection.onmessage = message => {
       try {
-        var parsedMsg = JSON.parse(message.data);
+        var parsedMsg = JSON.parse(pako.inflate(message.data, {to: "string"}));
       } catch (err) {
         console.log("WebSocket JSON Error:", err);
         return;
       }
       this.handleMessage(parsedMsg);
     };
+
     this.connection.onerror = err => {
       console.log("WebSocket Error:", err);
     };
