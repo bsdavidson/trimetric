@@ -72,8 +72,7 @@ func (sd *ShapeSQLDataset) FetchTripShapes(tripIDs []string) (map[string]*TripSh
 		p.Lat = lngLat.Y
 		p.Lng = lngLat.X
 
-		if lastShape == nil || lastShapeID != id {
-
+		if lastShape == nil || lastShapeID != id || lastShape.TripID != tripID {
 			lastShape = &TripShape{
 				TripID: tripID,
 				RouteShape: RouteShape{
