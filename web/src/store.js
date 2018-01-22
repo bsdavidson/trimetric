@@ -231,11 +231,11 @@ function stopsIconData(state = [], action) {
 function vehicles(state = [], action) {
   switch (action.type) {
     case UPDATE_VEHICLES: {
-      let newState = mergeUpdates(state, action.vehicles, (a, b) => {
-        return a.vehicle.id === b.vehicle.id;
-      });
+      // let newState = mergeUpdates(state, action.vehicles, (a, b) => {
+      //   return a.vehicle.id === b.vehicle.id;
+      // });
 
-      return newState;
+      return action.vehicles;
     }
     default:
       return state;
@@ -253,11 +253,11 @@ function vehiclesIconData(state = [], action) {
         timestamp: v.timestamp
       }));
 
-      let newState = mergeUpdates(state, vehiclesIconData, (a, b) => {
-        return a.vehicle_id === b.vehicle_id;
-      });
+      // let newState = mergeUpdates(state, vehiclesIconData, (a, b) => {
+      //   return a.vehicle_id === b.vehicle_id;
+      // });
 
-      return newState;
+      return vehiclesIconData;
     }
     default:
       return state;
@@ -282,11 +282,11 @@ function vehiclesPointData(state = [], action) {
         timestamp: v.timestamp
       }));
 
-      let newState = mergeUpdates(state, vehiclesPointData, (a, b) => {
-        return a.vehicle_id === b.vehicle_id;
-      });
+      // let newState = mergeUpdates(state, vehiclesPointData, (a, b) => {
+      //   return a.vehicle_id === b.vehicle_id;
+      // });
 
-      return newState;
+      return vehiclesPointData;
     }
     default:
       return state;
