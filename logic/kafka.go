@@ -50,7 +50,16 @@ func (k *KafkaProducer) Produce(b []byte) error {
 func ConsumeKafkaTopic(ctx context.Context, c ConsumerFunc, topic string, addrs []string) error {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
-	consumer, err := sarama.NewConsumer(addrs, config)
+	client, err := sarama.NewClient(addrs, config)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer func() {
+		if err := client.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+	consumer, err := sarama.NewConsumerFromClient(client)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -60,7 +69,28 @@ func ConsumeKafkaTopic(ctx context.Context, c ConsumerFunc, topic string, addrs 
 		}
 	}()
 
-	partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
+	offsetManager, err := sarama.NewOffsetManagerFromClient("trimetric", client)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer func() {
+		if err := offsetManager.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	partManager, err := offsetManager.ManagePartition(topic, 0)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer func() {
+		if err := partManager.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	offset, _ := partManager.NextOffset()
+	partitionConsumer, err := consumer.ConsumePartition(topic, 0, offset)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -86,6 +116,7 @@ func ConsumeKafkaTopic(ctx context.Context, c ConsumerFunc, topic string, addrs 
 				log.Println(err)
 				break
 			}
+			partManager.MarkOffset(msg.Offset+1, "")
 		}
 
 	}
